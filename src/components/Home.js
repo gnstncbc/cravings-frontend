@@ -11,14 +11,12 @@ const Home = () => {
     const [intensity, setIntensity] = useState(5);
     const [mood, setMood] = useState("");
     const [notes, setNotes] = useState("");
-    const [wifiSsid, setWifiSsid] = useState("Bilinmiyor");
 
     useEffect(() => {
         getWifiSsid();
     }, []);
 
     const getWifiSsid = async () => {
-        setWifiSsid("Ev Wi-Fi");
     };
 
     const startTimer = () => {
@@ -49,7 +47,6 @@ const Home = () => {
             intensity,
             mood,
             notes,
-            wifiSsid,
             createdAt: new Date(),
         };
 
@@ -131,16 +128,6 @@ const Home = () => {
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 className="w-full bg-gray-700 rounded-lg p-3 mt-1 text-white focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400">Wi-Fi SSID</label>
-                            <input
-                                type="text"
-                                value={wifiSsid}
-                                disabled
-                                className="w-full bg-gray-700 rounded-lg p-3 mt-1 text-gray-400 cursor-not-allowed"
                             />
                         </div>
 
