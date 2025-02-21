@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css"; // Bildirim CSS dosyası
 
 const App = () => {
     const [startTime, setStartTime] = useState(null);
@@ -29,11 +31,14 @@ const App = () => {
             setDuration((prev) => prev + 1);
         }, 1000);
         setIntervalId(id);
+
+        toast.info("Sayaç başladı!", { position: "top-center" });
     };
 
     const stopTimer = () => {
         clearInterval(intervalId); // Sayaç durdurulur
         setRunning(false);
+        toast.warn("Sayaç durdu!", { position: "top-center" });
     };
 
     const saveCraving = async () => {
@@ -58,14 +63,14 @@ const App = () => {
             });
 
             if (response.ok) {
-                alert("Sigara isteği kaydedildi!");
+                toast.success("Sigara isteği başarıyla kaydedildi!", { position: "top-center" });
                 resetForm();
             } else {
-                alert("Kaydetme başarısız oldu!");
+                toast.error("Kaydetme başarısız oldu!", { position: "top-center" });
             }
         } catch (error) {
             console.error("Bağlantı hatası:", error);
-            alert("Sunucuya bağlanılamadı!");
+            toast.error("Sunucuya bağlanılamadı!", { position: "top-center" });
         }
     };
 
@@ -77,6 +82,7 @@ const App = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white px-4">
+            <ToastContainer autoClose={3000} hideProgressBar />
             <div className="w-full max-w-md bg-gray-800 rounded-2xl shadow-2xl p-8 text-center">
                 <h2 className="text-3xl font-semibold mb-6 text-gray-200">Sigara İsteği Takip</h2>
 
