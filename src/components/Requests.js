@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
 
 const Requests = () => {
     const [cravings, setCravings] = useState([]);
@@ -9,7 +11,6 @@ const Requests = () => {
         fetch("http://192.168.1.13:8080/cravings")
             .then((response) => response.json())
             .then((data) => {
-                console.log("Veri çekildi:", data);
                 setCravings(data.reverse()); // En son eklenen en üstte görünsün
                 setLoading(false);
             })
@@ -18,6 +19,38 @@ const Requests = () => {
                 setLoading(false);
             });
     }, []);
+
+    const deleteAllCravings = async () => {
+        // 🟢 SweetAlert2 ile Şık Onay Kutusu
+        const result = await Swal.fire({
+            title: "Emin misiniz?",
+            text: "Bu işlem tüm istekleri silecektir!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Evet, sil!",
+            cancelButtonText: "Vazgeç",
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch("http://192.168.1.13:8080/cravings/deleteAll", {
+                    method: "DELETE",
+                });
+
+                if (response.ok) {
+                    toast.success("Tüm istekler başarıyla silindi!", { position: "top-center" });
+                    setCravings([]); // Listeyi temizle
+                } else {
+                    toast.error("Silme işlemi başarısız oldu!", { position: "top-center" });
+                }
+            } catch (error) {
+                console.error("Bağlantı hatası:", error);
+                toast.error("Sunucuya bağlanılamadı!", { position: "top-center" });
+            }
+        }
+    };
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white px-4">
@@ -43,9 +76,19 @@ const Requests = () => {
                                 <p className="text-sm text-gray-300">🔹 Yoğunluk: {craving.intensity}/10</p>
                                 {craving.mood && <p className="text-sm text-gray-300">😊 Ruh Hali: {craving.mood}</p>}
                                 {craving.notes && <p className="text-sm text-gray-300">📝 Notlar: {craving.notes}</p>}
+                                <p className="text-sm text-gray-400">📶 Wi-Fi: {craving.wifiSsid}</p>
                             </li>
                         ))}
                     </ul>
+                )}
+
+                {cravings.length > 0 && (
+                    <button
+                        onClick={deleteAllCravings}
+                        className="w-full mt-6 py-3 bg-red-500 hover:bg-red-600 text-lg font-semibold rounded-xl transition-all"
+                    >
+                        Tüm İstekleri Sil
+                    </button>
                 )}
             </div>
         </div>
