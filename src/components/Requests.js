@@ -76,7 +76,6 @@ const Requests = () => {
                                 <p className="text-sm text-gray-300">🔹 Yoğunluk: {craving.intensity}/10</p>
                                 {craving.mood && <p className="text-sm text-gray-300">😊 Ruh Hali: {craving.mood}</p>}
                                 {craving.notes && <p className="text-sm text-gray-300">📝 Notlar: {craving.notes}</p>}
-                                <p className="text-sm text-gray-400">📶 Wi-Fi: {craving.wifiSsid}</p>
                             </li>
                         ))}
                     </ul>
