@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 
 const App = () => {
     const [startTime, setStartTime] = useState(null);
-    const [endTime, setEndTime] = useState(null);
     const [duration, setDuration] = useState(0);
     const [running, setRunning] = useState(false);
+    const [intervalId, setIntervalId] = useState(null);
     const [intensity, setIntensity] = useState(5);
     const [mood, setMood] = useState("");
     const [notes, setNotes] = useState("");
@@ -19,21 +19,27 @@ const App = () => {
     };
 
     const startTimer = () => {
-        setStartTime(new Date());
+        const now = new Date();
+        setStartTime(now);
         setRunning(true);
+        setDuration(0); // Sayaç sıfırlanır
+
+        // Sayaç her saniye güncellenir
+        const id = setInterval(() => {
+            setDuration((prev) => prev + 1);
+        }, 1000);
+        setIntervalId(id);
     };
 
     const stopTimer = () => {
-        const end = new Date();
-        setEndTime(end);
-        setDuration(Math.floor((end - startTime) / 1000));
+        clearInterval(intervalId); // Sayaç durdurulur
         setRunning(false);
     };
 
     const saveCraving = async () => {
         const craving = {
             startTime,
-            endTime,
+            endTime: new Date(),
             duration,
             intensity,
             mood,
@@ -65,11 +71,7 @@ const App = () => {
 
     const resetForm = () => {
         setStartTime(null);
-        setEndTime(null);
         setDuration(0);
-        setIntensity(5);
-        setMood("");
-        setNotes("");
         setRunning(false);
     };
 
@@ -80,7 +82,7 @@ const App = () => {
 
                 <div className="text-center mb-4">
                     <p className="text-xl font-bold text-gray-100">
-                        {running ? "Sayaç Çalışıyor..." : `Geçen Süre: ${duration} saniye`}
+                        {running ? `Geçen Süre: ${duration} saniye` : `Toplam Süre: ${duration} saniye`}
                     </p>
                 </div>
 
