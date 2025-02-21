@@ -110,7 +110,6 @@ const App = () => {
                         onChange={(e) => setNotes(e.target.value)}
                     />
                     <br />
-
                     <label>Wi-Fi SSID:</label>
                     <input
                         type="text"
