@@ -6,9 +6,10 @@ import { toast } from "react-toastify";
 const Requests = () => {
     const [cravings, setCravings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const API_URL = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
-        fetch("http://192.168.1.13:8080/cravings")
+        fetch(`${API_URL}/cravings`)
             .then((response) => response.json())
             .then((data) => {
                 setCravings(data.reverse()); // En son eklenen en üstte görünsün

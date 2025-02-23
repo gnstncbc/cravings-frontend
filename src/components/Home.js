@@ -11,6 +11,7 @@ const Home = () => {
     const [intensity, setIntensity] = useState(5);
     const [mood, setMood] = useState("");
     const [notes, setNotes] = useState("");
+    const API_URL = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
         getWifiSsid();
@@ -51,7 +52,7 @@ const Home = () => {
         };
 
         try {
-            const response = await fetch("http://192.168.1.13:8080/cravings/save", {
+            const response = await fetch(`${API_URL}/cravings/save`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
