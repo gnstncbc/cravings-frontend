@@ -60,7 +60,7 @@ const Home = () => {
             });
 
             if (response.ok) {
-                toast.success("Sigara isteği başarıyla kaydedildi!", { position: "top-center" });
+                toast.success("Sigara isteği başarıyla kaydedildi! :)", { position: "top-center" });
                 resetForm();
             } else {
                 toast.error("Kaydetme başarısız oldu!", { position: "top-center" });
