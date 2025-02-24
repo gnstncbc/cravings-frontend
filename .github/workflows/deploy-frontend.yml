@@ -27,6 +27,7 @@ jobs:
           username: ${{ secrets.DO_USER }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
+            cd /opt/my-app
             docker pull gnstncbc/my-react-app:latest
             docker-compose down
             docker-compose up -d
