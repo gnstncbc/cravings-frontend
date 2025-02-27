@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import { FaTrash } from "react-icons/fa";
+import { formatDuration } from "../utils/timeUtils";
 
 const Requests = () => {
     const [cravings, setCravings] = useState([]);
@@ -105,7 +106,7 @@ const Requests = () => {
                             <li key={craving.id} className="p-4 bg-gray-700 rounded-lg shadow-md flex justify-between items-center">
                                 <div>
                                     <p className="text-sm text-gray-400">🕒 {new Date(craving.startTime).toLocaleString()}</p>
-                                    <p className="text-lg font-semibold">⏳ {craving.duration} saniye</p>
+                                    <p className="text-lg font-semibold">⏳ {formatDuration(craving.duration)}</p>
                                     <p className="text-sm text-gray-300">🔹 Yoğunluk: {craving.intensity}/10</p>
                                     {craving.mood && <p className="text-sm text-gray-300">😊 Ruh Hali: {craving.mood}</p>}
                                     {craving.notes && <p className="text-sm text-gray-300">📝 Notlar: {craving.notes}</p>}
