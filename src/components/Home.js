@@ -21,6 +21,11 @@ const Home = () => {
     const getWifiSsid = async () => {
     };
 
+    const addThreeHours = (date) => {
+        date.setHours(date.getHours() + 3);
+        return date.toISOString(); // "YYYY-MM-DDTHH:mm:ss.sssZ" formatında döndürür
+    };    
+
     const startTimer = () => {
         const now = new Date();
         setStartTime(now);
@@ -42,9 +47,10 @@ const Home = () => {
     };
 
     const saveCraving = async () => {
+        const now = new Date();
         const craving = {
-            startTime,
-            endTime: new Date(),
+            startTime: addThreeHours(new Date(startTime)),
+            endTime: addThreeHours(now),
             duration,
             intensity,
             mood,
@@ -142,7 +148,6 @@ const Home = () => {
                     </div>
                 )}
 
-                {/* En alta "İstekler" butonu eklendi */}
                 <Link to="/requests">
                     <button className="mt-6 w-full py-3 bg-gray-700 hover:bg-gray-600 text-lg font-semibold rounded-xl transition-all">
                         İstekler
