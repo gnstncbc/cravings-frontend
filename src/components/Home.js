@@ -20,25 +20,20 @@ const Home = () => {
     }, []);
 
     useEffect(() => {
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-        return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-    }, [running, lastActiveTime]);
-
-    const handleVisibilityChange = () => {
-        if (!running) return;
-        
-        if (document.visibilityState === "hidden") {
-            setLastActiveTime(Date.now());
-        } else if (document.visibilityState === "visible" && lastActiveTime) {
-            const currentTime = Date.now();
-            const elapsed = Math.floor((currentTime - lastActiveTime) / 1000);
-            
-            if (elapsed > 0 && lastActiveTime === currentTime - elapsed * 1000) {
-                setDuration((prev) => prev + elapsed);
-            }
+        let interval;
+        if (running && startTime) {
+            interval = setInterval(() => {
+                const now = Date.now();
+                const elapsed = Math.floor((now - startTime) / 1000);
+                setDuration(elapsed);
+            }, 1000);
+        } else {
+            clearInterval(interval);
         }
-    };
-    
+
+        return () => clearInterval(interval);
+    }, [running, startTime]);
+
     const getWifiSsid = async () => {
     };
 
@@ -48,20 +43,14 @@ const Home = () => {
     };    
 
     const startTimer = () => {
-        const now = new Date();
+        const now = Date.now();
         setStartTime(now);
         setRunning(true);
         setDuration(0);
         setLastActiveTime(null);
-
-        const id = setInterval(() => {
-            setDuration((prev) => prev + 1);
-        }, 1000);
-        setIntervalId(id);
     };
 
     const stopTimer = () => {
-        clearInterval(intervalId);
         setRunning(false);
     };
 
