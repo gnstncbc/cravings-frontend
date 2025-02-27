@@ -12,18 +12,39 @@ const Home = () => {
     const [intensity, setIntensity] = useState(5);
     const [mood, setMood] = useState("");
     const [notes, setNotes] = useState("");
+    const [lastActiveTime, setLastActiveTime] = useState(null);
     const API_URL = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
         getWifiSsid();
     }, []);
 
+    useEffect(() => {
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    }, [running, lastActiveTime]);
+
+    const handleVisibilityChange = () => {
+        if (!running) return;
+        
+        if (document.visibilityState === "hidden") {
+            setLastActiveTime(Date.now());
+        } else if (document.visibilityState === "visible" && lastActiveTime) {
+            const currentTime = Date.now();
+            const elapsed = Math.floor((currentTime - lastActiveTime) / 1000);
+            
+            if (elapsed > 0 && lastActiveTime === currentTime - elapsed * 1000) {
+                setDuration((prev) => prev + elapsed);
+            }
+        }
+    };
+    
     const getWifiSsid = async () => {
     };
 
     const addThreeHours = (date) => {
         date.setHours(date.getHours() + 3);
-        return date.toISOString(); // "YYYY-MM-DDTHH:mm:ss.sssZ" formatında döndürür
+        return date.toISOString();
     };    
 
     const startTimer = () => {
@@ -31,19 +52,17 @@ const Home = () => {
         setStartTime(now);
         setRunning(true);
         setDuration(0);
+        setLastActiveTime(null);
 
         const id = setInterval(() => {
             setDuration((prev) => prev + 1);
         }, 1000);
         setIntervalId(id);
-
-        //toast.info("Sayaç başladı!", { position: "top-center" });
     };
 
     const stopTimer = () => {
         clearInterval(intervalId);
         setRunning(false);
-        //toast.warn("Sayaç durdu!", { position: "top-center" });
     };
 
     const saveCraving = async () => {
@@ -116,19 +135,13 @@ const Home = () => {
                                 value={intensity}
                                 onChange={(e) => {
                                     let value = e.target.value;
-                                    
-                                    // Boş bırakıldığında 0'a çekme
                                     if (value === "") {
                                         setIntensity("");
                                         return;
                                     }
-                                    
-                                    // Önde sıfır olmasını engelle
                                     if (/^0\d/.test(value)) {
-                                        value = value.replace(/^0+/, ""); // Başındaki 0'ları kaldır
+                                        value = value.replace(/^0+/, "");
                                     }
-                            
-                                    // Min ve Max sınırları uygula
                                     let num = Math.min(10, Math.max(1, Number(value)));
                                     setIntensity(num);
                                 }}
