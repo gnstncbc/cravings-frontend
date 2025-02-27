@@ -31,13 +31,13 @@ const Home = () => {
         }, 1000);
         setIntervalId(id);
 
-        toast.info("Sayaç başladı!", { position: "top-center" });
+        //toast.info("Sayaç başladı!", { position: "top-center" });
     };
 
     const stopTimer = () => {
         clearInterval(intervalId);
         setRunning(false);
-        toast.warn("Sayaç durdu!", { position: "top-center" });
+        //toast.warn("Sayaç durdu!", { position: "top-center" });
     };
 
     const saveCraving = async () => {
