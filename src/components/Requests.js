@@ -36,7 +36,7 @@ const Requests = () => {
 
         if (result.isConfirmed) {
             try {
-                const response = await fetch("http://192.168.1.13:8080/cravings/deleteAll", {
+                const response = await fetch(`${API_URL}/cravings/deleteAll`, {
                     method: "DELETE",
                 });
 
