@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { formatDuration } from "../utils/timeUtils";
 
 const Home = () => {
     const [startTime, setStartTime] = useState(null);
@@ -31,13 +32,13 @@ const Home = () => {
         }, 1000);
         setIntervalId(id);
 
-        toast.info("Sayaç başladı!", { position: "top-center" });
+        //toast.info("Sayaç başladı!", { position: "top-center" });
     };
 
     const stopTimer = () => {
         clearInterval(intervalId);
         setRunning(false);
-        toast.warn("Sayaç durdu!", { position: "top-center" });
+        //toast.warn("Sayaç durdu!", { position: "top-center" });
     };
 
     const saveCraving = async () => {
@@ -86,7 +87,7 @@ const Home = () => {
 
                 <div className="text-center mb-4">
                     <p className="text-xl font-bold text-gray-100">
-                        {running ? `Geçen Süre: ${duration} saniye` : `Toplam Süre: ${duration} saniye`}
+                        {running ? `Geçen Süre: ${formatDuration(duration)}` : `Toplam Süre: ${formatDuration(duration)}`}
                     </p>
                 </div>
 
@@ -94,7 +95,7 @@ const Home = () => {
                     onClick={running ? stopTimer : startTimer}
                     className={`w-full py-3 text-lg font-semibold rounded-xl transition-all focus:outline-none ${
                         running ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
-                    }`}
+                        }`}
                 >
                     {running ? "Durdur" : "Başlat"}
                 </button>
