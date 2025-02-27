@@ -112,8 +112,26 @@ const Home = () => {
                             <label className="block text-sm font-medium text-gray-400">Yoğunluk (1-10)</label>
                             <input
                                 type="number"
+                                inputMode="numeric"
                                 value={intensity}
-                                onChange={(e) => setIntensity(Number(e.target.value))}
+                                onChange={(e) => {
+                                    let value = e.target.value;
+                                    
+                                    // Boş bırakıldığında 0'a çekme
+                                    if (value === "") {
+                                        setIntensity("");
+                                        return;
+                                    }
+                                    
+                                    // Önde sıfır olmasını engelle
+                                    if (/^0\d/.test(value)) {
+                                        value = value.replace(/^0+/, ""); // Başındaki 0'ları kaldır
+                                    }
+                            
+                                    // Min ve Max sınırları uygula
+                                    let num = Math.min(10, Math.max(1, Number(value)));
+                                    setIntensity(num);
+                                }}
                                 min="1"
                                 max="10"
                                 className="w-full bg-gray-700 rounded-lg p-3 mt-1 text-white focus:ring-2 focus:ring-blue-500"
