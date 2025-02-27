@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaDownload } from "react-icons/fa";
 import { formatDuration } from "../utils/timeUtils";
 
 const Requests = () => {
@@ -85,6 +85,26 @@ const Requests = () => {
         }
     };
 
+    const downloadAllCravings = () => {
+        if (cravings.length === 0) {
+            toast.warning("İndirilecek veri bulunamadı!", { position: "top-center" });
+            return;
+        }
+
+        const csvContent = [
+            "id,Start Time,Duration,Intensity,Mood,Notes"
+        ];
+        cravings.forEach(({ id, startTime, duration, intensity, mood, notes }) => {
+            csvContent.push(`"${id}","${new Date(startTime).toLocaleString()}","${duration}","${intensity}","${mood || ''}","${notes || ''}"`);
+        });
+
+        const blob = new Blob([csvContent.join("\n")], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "cravings.csv";
+        link.click();
+    };
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white px-4">
             <div className="w-full max-w-lg bg-gray-800 rounded-2xl shadow-2xl p-6">
@@ -120,12 +140,14 @@ const Requests = () => {
                 )}
 
                 {cravings.length > 0 && (
-                    <button
-                        onClick={() => deleteAllCravings()}
-                        className="w-full mt-6 py-3 bg-red-500 hover:bg-red-600 text-lg font-semibold rounded-xl transition-all"
-                    >
-                        Tüm İstekleri Sil
-                    </button>
+                    <div className="mt-6 flex flex-col space-y-4">
+                        <button onClick={deleteAllCravings} className="w-full py-3 bg-red-500 hover:bg-red-600 text-lg font-semibold rounded-xl flex items-center justify-center gap-2 transition-all">
+                            <FaTrash size={20} /> Tüm İstekleri Sil
+                        </button>
+                        <button onClick={downloadAllCravings} className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-lg font-semibold rounded-xl flex items-center justify-center gap-2 transition-all">
+                            <FaDownload size={20} /> Tüm İstekleri İndir
+                        </button>
+                    </div>
                 )}
             </div>
         </div>
