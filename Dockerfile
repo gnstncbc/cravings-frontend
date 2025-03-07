@@ -18,7 +18,16 @@ FROM nginx:stable-alpine
 COPY --from=build /app/build /usr/share/nginx/html
 
 # Varsayılan Nginx portunu açıyoruz
-EXPOSE 80
+EXPOSE 80 443
+
+# Let’s Encrypt sertifikalarını container içine mount ediyoruz
+VOLUME ["/etc/letsencrypt"]
+
+# Özel Nginx konfigürasyon dosyamızı ekliyoruz
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Build aşamasında üretilen dosyaları Nginx'in varsayılan dizinine kopyalıyoruz
+COPY --from=build /app/build /usr/share/nginx/html
 
 # Nginx'i başlatıyoruz
 CMD ["nginx", "-g", "daemon off;"]
