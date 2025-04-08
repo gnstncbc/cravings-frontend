@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // 🆕 Yönlendirme için eklendi
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { formatDuration } from "../utils/timeUtils";
@@ -8,34 +8,17 @@ const Home = () => {
     const [startTime, setStartTime] = useState(null);
     const [duration, setDuration] = useState(0);
     const [running, setRunning] = useState(false);
-    const [intervalId, setIntervalId] = useState(null);
     const [intensity, setIntensity] = useState(5);
     const [mood, setMood] = useState("");
     const [notes, setNotes] = useState("");
-    const [lastActiveTime, setLastActiveTime] = useState(null);
     const API_URL = process.env.REACT_APP_API_URL;
+    const navigate = useNavigate(); // 🆕 React Router yönlendirme
 
     useEffect(() => {
         getWifiSsid();
     }, []);
 
-    useEffect(() => {
-        let interval;
-        if (running && startTime) {
-            interval = setInterval(() => {
-                const now = Date.now();
-                const elapsed = Math.floor((now - startTime) / 1000);
-                setDuration(elapsed);
-            }, 1000);
-        } else {
-            clearInterval(interval);
-        }
-
-        return () => clearInterval(interval);
-    }, [running, startTime]);
-
-    const getWifiSsid = async () => {
-    };
+    const getWifiSsid = async () => {};
 
     const addThreeHours = (date) => {
         date.setHours(date.getHours() + 3);
@@ -47,7 +30,6 @@ const Home = () => {
         setStartTime(now);
         setRunning(true);
         setDuration(0);
-        setLastActiveTime(null);
     };
 
     const stopTimer = () => {
@@ -69,9 +51,7 @@ const Home = () => {
         try {
             const response = await fetch(`${API_URL}/cravings/save`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(craving),
             });
 
@@ -95,6 +75,13 @@ const Home = () => {
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white px-4">
+            <button 
+                onClick={() => navigate("/login")} 
+                className="absolute top-4 right-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+            >
+                Giriş Yap
+            </button>
+
             <ToastContainer autoClose={3000} hideProgressBar />
             <div className="w-full max-w-md bg-gray-800 rounded-2xl shadow-2xl p-8 text-center">
                 <h2 className="text-3xl font-semibold mb-6 text-gray-200">Sigara İsteği Takip</h2>
