@@ -11,7 +11,7 @@ const Requests = () => {
     const API_URL = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
-        fetch(`${API_URL}/cravings`)
+        fetch(`${API_URL}/cravings/all`)
             .then((response) => response.json())
             .then((data) => {
                 setCravings(data.reverse()); // En son eklenen en üstte görünsün
