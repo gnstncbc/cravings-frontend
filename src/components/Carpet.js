@@ -466,28 +466,10 @@ const Carpet = () => {
                 <div className="flex flex-col lg:flex-row gap-6">
                     {/* Sol Taraf */}
                     <div className="lg:w-1/4 flex flex-col gap-4" style={{ minWidth: '250px' }}>
-                        {/* Oyuncu Ekleme/Yönetme */}
-                        <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
-                            <h2 className="text-xl font-semibold mb-3 text-gray-200">Oyuncular ({isLoadingPlayers ? '...' : allPlayers.length})</h2>
-                            <form onSubmit={handleAddPlayer} className="flex gap-2 mb-3">
-                                <input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} placeholder="Yeni oyuncu adı" className="flex-grow bg-gray-700 rounded p-2 outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 placeholder-gray-400" disabled={isLoadingPlayers}/>
-                                <button type="submit" className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded font-semibold text-white transition-colors duration-200 disabled:opacity-50" disabled={isLoadingPlayers}>+</button>
-                            </form>
-                            <div className="max-h-48 overflow-y-auto pr-1 space-y-1.5 mb-2 custom-scrollbar">
-                                {isLoadingPlayers ? (<p className="text-gray-500 text-center text-sm py-2">Yükleniyor...</p>)
-                                : allPlayers.length === 0 ? (<p className="text-gray-500 text-center text-sm py-2">Oyuncu yok.</p>)
-                                : ( allPlayers.map(player => (
-                                        <div key={player.id} className="flex justify-between items-center bg-gray-700 hover:bg-gray-600 p-1.5 rounded text-sm transition-colors duration-150">
-                                            <span className='text-gray-100'>{player.name}</span>
-                                            <button onClick={() => handleDeletePlayer(player.id)} className='text-red-500 hover:text-red-400 text-xs px-1 font-medium'>Sil</button>
-                                        </div>
-                                )))}
-                            </div>
-                        </div>
                         {/* Müsait Oyuncular Havuzu */}
                         <div className="flex-grow">
                             <PlayerPool id="playerPool" players={availablePlayers} loading={isLoadingPlayers} />
-                        </div>
+                        </div>                        
                         {/* Kontroller */}
                         <div className="bg-gray-800 p-4 rounded-lg shadow-lg space-y-3">
                             <button onClick={clearPitch} className='w-full bg-yellow-600 hover:bg-yellow-700 py-2 rounded text-white font-semibold transition-colors duration-200'>Mevcut Sahayı Temizle</button>
@@ -510,6 +492,24 @@ const Carpet = () => {
                                      </button>
                                  </div>
                              </div>
+                        </div>
+                        {/* Oyuncu Ekleme/Yönetme */}
+                        <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+                            <h2 className="text-xl font-semibold mb-3 text-gray-200">Oyuncular ({isLoadingPlayers ? '...' : allPlayers.length})</h2>
+                            <form onSubmit={handleAddPlayer} className="flex gap-2 mb-3">
+                                <input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} placeholder="Yeni oyuncu adı" className="flex-grow bg-gray-700 rounded p-2 outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 placeholder-gray-400" disabled={isLoadingPlayers}/>
+                                <button type="submit" className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded font-semibold text-white transition-colors duration-200 disabled:opacity-50" disabled={isLoadingPlayers}>+</button>
+                            </form>
+                            <div className="max-h-48 overflow-y-auto pr-1 space-y-1.5 mb-2 custom-scrollbar">
+                                {isLoadingPlayers ? (<p className="text-gray-500 text-center text-sm py-2">Yükleniyor...</p>)
+                                : allPlayers.length === 0 ? (<p className="text-gray-500 text-center text-sm py-2">Oyuncu yok.</p>)
+                                : ( allPlayers.map(player => (
+                                        <div key={player.id} className="flex justify-between items-center bg-gray-700 hover:bg-gray-600 p-1.5 rounded text-sm transition-colors duration-150">
+                                            <span className='text-gray-100'>{player.name}</span>
+                                            <button onClick={() => handleDeletePlayer(player.id)} className='text-red-500 hover:text-red-400 text-xs px-1 font-medium'>Sil</button>
+                                        </div>
+                                )))}
+                            </div>
                         </div>
                     </div>
                     {/* Sağ Taraf */}
