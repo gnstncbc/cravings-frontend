@@ -31,12 +31,12 @@ const Home = () => {
 
       </div>
        {/* İstekler Sayfasına Gitmek İçin Buton (Opsiyonel, ana sayfada da kalabilir) */}
-       <Link to="/requests" className="mt-12">
+       {/* <Link to="/requests" className="mt-12">
            <button className="w-full py-3 px-6 bg-gray-700 hover:bg-gray-600 text-lg font-semibold rounded-xl transition-all">
                İstek Geçmişi
            </button>
-       </Link>
-    </div>
+       </Link> */}
+      </div>
   );
 };
 
