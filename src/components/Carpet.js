@@ -95,7 +95,7 @@ function PitchDisplay({ pitchId, teamId, playersOnThisPitch, pitchRef }) {
     const teamBgColor = teamId === 'A' ? 'bg-red-900' : 'bg-blue-900';
 
     return (
-        <div ref={pitchRef} className={`flex-1 h-[500px] ${teamBgColor} bg-opacity-20 rounded-lg border-2 ${teamBorderColor} relative overflow-hidden`}>
+        <div ref={pitchRef} className={`flex-1 min-h-[500px] ${teamBgColor} bg-opacity-20 rounded-lg border-2 ${teamBorderColor} relative overflow-hidden`}>
             <h2 className={`text-center font-bold text-xl my-2 ${teamId === 'A' ? 'text-red-400' : 'text-blue-400'}`}>TAKIM {teamId}</h2>
             <div ref={setNodeRef} className={`absolute inset-0 z-10 ${isOver ? `${teamId === 'A' ? 'bg-red-500' : 'bg-blue-500'} bg-opacity-10` : ''}`}></div>
 
