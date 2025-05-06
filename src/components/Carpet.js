@@ -21,8 +21,8 @@ import { snapCenterToCursor } from '@dnd-kit/modifiers';
 // --- API Base URL ---
 // Nginx proxy'nize veya doğrudan backend adresinize göre ayarlayın
 // const API_BASE_URL = '/api'; // Örnek: Nginx proxy'si varsa
-const API_BASE_URL = 'http://localhost:8080/api'; // Örnek: Local test
-// const API_BASE_URL = 'https://gnstncbc.com/api';
+// const API_BASE_URL = 'http://localhost:8080/api'; // Örnek: Local test
+const API_BASE_URL = 'https://gnstncbc.com/api';
 
 // --- API Client (Axios Instance) ---
 const apiClient = axios.create({
