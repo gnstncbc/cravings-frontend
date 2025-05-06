@@ -260,22 +260,41 @@ const Carpet = () => {
         }
         else if (!sourcePitch && targetPitch) { // Player moved from pool to a pitch
             const targetPitchRef = targetPitch === 'A' ? pitchRefA : pitchRefB;
-            const pitchRect = targetPitchRef?.current?.getBoundingClientRect();
-            let dropXPercent = 50, dropYPercent = 50;
+        // pitchRect, PitchDisplay'in dış div'inden gelir.
+        // over.rect, useDroppable'ın setNodeRef'inden (PitchDisplay'in iç div'i) gelir.
+        // Normalde aynı alanı temsil etmeleri gerekir.
+        // Boyutlar için over.rect kullanmak daha güvenlidir çünkü dnd-kit'in "gördüğü" bırakılabilir alandır.
+        // const pitchBoundingRect = targetPitchRef?.current?.getBoundingClientRect(); // Sağlama için veya over.rect sorunluysa kullanılabilir
 
-            if (pitchRect && pitchRect.width > 0 && pitchRect.height > 0) {
-                // V1 logic for pool to pitch: position relative to center + delta
-                let initialPixelX = pitchRect.width / 2 + delta.x;
-                let initialPixelY = pitchRect.height / 2 + delta.y;
+        let dropXPercent = 50, dropYPercent = 50; // Varsayılan/fallback değeri
 
-                initialPixelX = Math.max(0, Math.min(initialPixelX, pitchRect.width));
-                initialPixelY = Math.max(0, Math.min(initialPixelY, pitchRect.height));
+        const activeTranslatedRect = active.rect.current.translated;
 
-                dropXPercent = (initialPixelX / pitchRect.width) * 100;
-                dropYPercent = (initialPixelY / pitchRect.height) * 100;
+        // Bırakılabilir alanın boyutları ve başlangıç noktası için over.rect kullanın.
+        if (over && over.rect && over.rect.width > 0 && over.rect.height > 0 && activeTranslatedRect) {
+            // Sürüklenen öğenin merkezi (snapCenterToCursor sayesinde imleçle aynı yerde)
+            // Bunlar görünüm penceresi (viewport) koordinatlarıdır.
+            const draggedItemCenterX_viewport = activeTranslatedRect.left + activeTranslatedRect.width / 2;
+            const draggedItemCenterY_viewport = activeTranslatedRect.top + activeTranslatedRect.height / 2;
 
-                dropXPercent = Math.max(0, Math.min(100, dropXPercent));
-                dropYPercent = Math.max(0, Math.min(100, dropYPercent));
+            // Sahanın (over.id ile tanımlanan bırakılabilir alan) sol üst köşesinin
+            // görünüm penceresine göre konumu.
+            const pitchOriginX_viewport = over.rect.left;
+            const pitchOriginY_viewport = over.rect.top;
+
+            // İmlecin pozisyonunu, sahanın sol üst köşesine göre hesaplayın.
+            // Bu, PlayerMarker'ın merkezi için saha içindeki piksel pozisyonu olacaktır.
+            let finalPixelX_relative = draggedItemCenterX_viewport - pitchOriginX_viewport;
+            let finalPixelY_relative = draggedItemCenterY_viewport - pitchOriginY_viewport;
+
+            // Sahanın boyutlarına göre yüzdeye çevirin.
+            // over.rect.width ve over.rect.height kullanın, çünkü bunlar bırakılabilir alanın boyutlarıdır.
+            dropXPercent = (finalPixelX_relative / over.rect.width) * 100;
+            dropYPercent = (finalPixelY_relative / over.rect.height) * 100;
+
+            // Sınırlama (clamping) işlemi aşağıdaki satırlarda orijinal kodda zaten yapılıyor.
+            // Bu, yeni hesaplanan yüzdelerin 0-100 aralığında kalmasını sağlar.
+
             } else {
                 console.warn("Saha boyutları (pitchRect) alınamadı, fallback %50/%50 kullanılıyor.");
             }
