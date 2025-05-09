@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Home from "./components/Home"; // Ana sayfa (ikon seçimi)
 import Requests from "./components/Requests"; // İstekler listesi
 import CravingTracker from "./components/CravingTracker"; // Yeni takip sayfası
-import Carpet from "./components/Carpet"; // Halı saha sayfası
+import Carpet from "./components/Carpet/Carpet.js"; // Halı saha sayfası
 
 const App = () => {
     return (
