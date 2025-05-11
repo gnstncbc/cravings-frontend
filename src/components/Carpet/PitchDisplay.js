@@ -4,13 +4,13 @@ import PlayerMarker from './PlayerMarker';
 
 function PitchDisplay({ pitchId, teamId, playersOnThisPitch, pitchRef }) {
     const { setNodeRef, isOver } = useDroppable({ id: pitchId });
-    const teamBorderColor = teamId === 'A' ? 'border-red-500' : 'border-blue-500';
-    const teamBgColor = teamId === 'A' ? 'bg-red-900' : 'bg-blue-900';
+    const teamBorderColor = teamId === 'A' ? 'border-red-500' : 'border-white-500';
+    const teamBgColor = teamId === 'A' ? 'bg-red-900' : 'bg-white/5';
 
     return (
         <div ref={pitchRef} className={`flex-1 min-h-[500px] sm:h-[500px] ${teamBgColor} bg-opacity-20 rounded-lg border-2 ${teamBorderColor} relative overflow-hidden`}>
-            <h2 className={`text-center font-bold text-xl my-2 ${teamId === 'A' ? 'text-red-400' : 'text-blue-400'}`}>TAKIM {teamId}</h2>
-            <div ref={setNodeRef} className={`absolute inset-0 z-10 ${isOver ? `${teamId === 'A' ? 'bg-red-500' : 'bg-blue-500'} bg-opacity-10` : ''}`}></div>
+            <h2 className={`text-center font-bold text-xl my-2 ${teamId === 'A' ? 'text-red-400' : 'text-white-400'}`}>TAKIM {teamId}</h2>
+            <div ref={setNodeRef} className={`absolute inset-0 z-10 ${isOver ? `${teamId === 'A' ? 'bg-red-500' : 'bg-white-500'} bg-opacity-10` : ''}`}></div>
             {/* Pitch markings */}
             <div className="absolute left-0 top-1/2 w-full h-0.5 bg-white bg-opacity-30 transform -translate-y-1/2 z-0"></div>
             <div className="absolute top-1/2 left-1/2 w-16 h-16 border border-white border-opacity-30 rounded-full transform -translate-x-1/2 -translate-y-1/2 z-0"></div>
