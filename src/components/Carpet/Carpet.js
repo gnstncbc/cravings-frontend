@@ -473,6 +473,7 @@ const Carpet = () => {
                                 isSharing={isSharing}
                                 isSavingMatch={isSavingMatch}
                                 hasPlayersOnPitch={Object.keys(playersOnPitchA).length > 0 || Object.keys(playersOnPitchB).length > 0}
+                                selectedMatchId={selectedMatchId}
                             />
                             <MatchControls
                                 matches={matches}
