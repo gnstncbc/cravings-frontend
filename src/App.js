@@ -6,6 +6,7 @@ import Requests from "./components/Requests"; // İstekler listesi
 import CravingTracker from "./components/CravingTracker"; // Yeni takip sayfası
 import Carpet from "./components/Carpet/Carpet.js"; // Halı saha sayfası
 import PollPage from "./components/PollPage/PollPage.js"; // Oylama sayfası
+import Scoreboard from "./components/Scoreboard/Scoreboard.js";
 import LoginPage from "./components/Auth/LoginPage";
 import RegisterPage from "./components/Auth/RegisterPage";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
@@ -20,7 +21,10 @@ const Navbar = () => {
                 <div className="flex items-center space-x-4">
                     <Link to="/" className="text-xl font-bold hover:text-blue-300">Ana Sayfa</Link>
                     {isAuthenticated && (
-                        <Link to="/carpet" className="hover:text-blue-300">Kadro Oluşturucu</Link>
+                        <>
+                            <Link to="/carpet" className="hover:text-blue-300">Kadro Oluşturucu</Link>
+                            <Link to="/scoreboard" className="hover:text-blue-300">Puan Durumu</Link>
+                        </>
                     )}
                 </div>
                 <div className="flex items-center space-x-4">
@@ -72,9 +76,17 @@ const AppContent = () => {
                     <Route 
                         path="/carpet" 
                         element={
-                            
+                            <ProtectedRoute>
                                 <Carpet />
-                            
+                            </ProtectedRoute>
+                        } 
+                    />
+                    <Route 
+                        path="/scoreboard" 
+                        element={
+                            <ProtectedRoute>
+                                <Scoreboard />
+                            </ProtectedRoute>
                         } 
                     />
                     <Route 
