@@ -108,38 +108,43 @@ const Scoreboard = () => {
                         <table className="w-full">
                             <thead>
                                 <tr className="bg-gray-700">
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                    <th className="px-2 md:px-6 py-2 md:py-3 text-left text-[10px] md:text-xs font-medium text-gray-300 uppercase tracking-wider">
                                         Oyuncu
                                     </th>
                                     <th 
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
+                                        className="px-2 md:px-6 py-2 md:py-3 text-left text-[10px] md:text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
                                         onClick={() => handleSort('winCount')}
                                     >
-                                        Galibiyet {getSortDirection('winCount') && (getSortDirection('winCount') === 'asc' ? '↑' : '↓')}
+                                        <span className="md:hidden">G</span>
+                                        <span className="hidden md:inline">Galibiyet</span> {getSortDirection('winCount') && (getSortDirection('winCount') === 'asc' ? '↑' : '↓')}
                                     </th>
                                     <th 
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
+                                        className="px-2 md:px-6 py-2 md:py-3 text-left text-[10px] md:text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
                                         onClick={() => handleSort('drawCount')}
                                     >
-                                        Beraberlik {getSortDirection('drawCount') && (getSortDirection('drawCount') === 'asc' ? '↑' : '↓')}
+                                        <span className="md:hidden">B</span>
+                                        <span className="hidden md:inline">Beraberlik</span> {getSortDirection('drawCount') && (getSortDirection('drawCount') === 'asc' ? '↑' : '↓')}
                                     </th>
                                     <th 
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
+                                        className="px-2 md:px-6 py-2 md:py-3 text-left text-[10px] md:text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
                                         onClick={() => handleSort('loseCount')}
                                     >
-                                        Mağlubiyet {getSortDirection('loseCount') && (getSortDirection('loseCount') === 'asc' ? '↑' : '↓')}
+                                        <span className="md:hidden">M</span>
+                                        <span className="hidden md:inline">Mağlubiyet</span> {getSortDirection('loseCount') && (getSortDirection('loseCount') === 'asc' ? '↑' : '↓')}
                                     </th>
                                     <th 
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
+                                        className="px-2 md:px-6 py-2 md:py-3 text-left text-[10px] md:text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
                                         onClick={() => handleSort('totalGames')}
                                     >
-                                        Toplam Maç {getSortDirection('totalGames') && (getSortDirection('totalGames') === 'asc' ? '↑' : '↓')}
+                                        <span className="md:hidden">TM</span>
+                                        <span className="hidden md:inline">Toplam Maç</span> {getSortDirection('totalGames') && (getSortDirection('totalGames') === 'asc' ? '↑' : '↓')}
                                     </th>
                                     <th 
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
+                                        className="px-2 md:px-6 py-2 md:py-3 text-left text-[10px] md:text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
                                         onClick={() => handleSort('winLoseRatio')}
                                     >
-                                        Galibiyet Yüzdesi {getSortDirection('winLoseRatio') && (getSortDirection('winLoseRatio') === 'asc' ? '↑' : '↓')}
+                                        <span className="md:hidden">%</span>
+                                        <span className="hidden md:inline">Galibiyet Yüzdesi</span> {getSortDirection('winLoseRatio') && (getSortDirection('winLoseRatio') === 'asc' ? '↑' : '↓')}
                                     </th>
                                 </tr>
                             </thead>
@@ -150,25 +155,24 @@ const Scoreboard = () => {
                                     
                                     return (
                                         <tr key={player.id} className="hover:bg-gray-700">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-white">{player.name}</div>
+                                            <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                                                <div className="text-[11px] md:text-sm font-medium text-white">{player.name}</div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-green-400">{player.winCount}</div>
+                                            <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                                                <div className="text-[11px] md:text-sm text-green-400">{player.winCount}</div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-yellow-400">{player.drawCount}</div>
+                                            <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                                                <div className="text-[11px] md:text-sm text-yellow-400">{player.drawCount}</div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-red-400">{player.loseCount}</div>
+                                            <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                                                <div className="text-[11px] md:text-sm text-red-400">{player.loseCount}</div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-blue-400">{totalGames}</div>
+                                            <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                                                <div className="text-[11px] md:text-sm text-blue-400">{totalGames}</div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-yellow-400">%{winPercentage.toFixed(1)}</div>
+                                            <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
+                                                <div className="text-[11px] md:text-sm text-yellow-400">%{winPercentage.toFixed(1)}</div>
                                             </td>
-                                            
                                         </tr>
                                     );
                                 })}
