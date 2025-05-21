@@ -76,17 +76,13 @@ const AppContent = () => {
                     <Route 
                         path="/carpet" 
                         element={
-                            <ProtectedRoute>
                                 <Carpet />
-                            </ProtectedRoute>
                         } 
                     />
                     <Route 
                         path="/scoreboard" 
                         element={
-                            <ProtectedRoute>
                                 <Scoreboard />
-                            </ProtectedRoute>
                         } 
                     />
                     <Route 
