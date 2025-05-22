@@ -5,35 +5,57 @@ function ActionButtons({
     onSharePitches,
     onClearPitch,
     onSaveMatch,
+    onAlignPlayers,
+    onSwitchTeams,
     isSharing,
     isSavingMatch,
+    isAligningPlayers,
+    isSwitchingTeams,
     hasPlayersOnPitch,
     selectedMatchId
 }) {
     return (
-        <>
+        <div className="space-y-2">
             <button
                 onClick={onSharePitches}
-                className='w-full bg-purple-600 hover:bg-purple-700 py-2.5 rounded text-white font-semibold transition-colors duration-200 disabled:opacity-60'
-                disabled={isSharing || !hasPlayersOnPitch}
-                title={!hasPlayersOnPitch ? "Paylaşmak için sahada oyuncu olmalı" : "Her iki kadroyu da paylaş"}
+                disabled={!hasPlayersOnPitch || isSharing}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                {isSharing ? 'Hazırlanıyor...' : 'Kadroları Resim Olarak Paylaş'}
+                {isSharing ? 'Paylaşılıyor...' : 'Kadroyu Paylaş'}
             </button>
+            
             <button
-                onClick={onClearPitch}
-                className='w-full bg-yellow-600 hover:bg-yellow-700 py-2 rounded text-white font-semibold transition-colors duration-200 disabled:opacity-50'
-                disabled={isSharing}
+                onClick={onAlignPlayers}
+                disabled={!hasPlayersOnPitch || isAligningPlayers}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                Mevcut Sahayı Temizle
+                {isAligningPlayers ? 'Hizalanıyor...' : 'Oyuncuları Hizala'}
             </button>
+
+            <button
+                onClick={onSwitchTeams}
+                disabled={!hasPlayersOnPitch || isSwitchingTeams}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {isSwitchingTeams ? 'Değiştiriliyor...' : 'Takımları Değiştir'}
+            </button>
+
             <button
                 onClick={onSaveMatch}
-                className='w-full bg-blue-600 hover:bg-blue-700 py-2 rounded text-white font-semibold transition-colors duration-200 disabled:opacity-50'
-                disabled={isSavingMatch || isSharing}
+                disabled={!hasPlayersOnPitch || isSavingMatch}
+                className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                {isSavingMatch ? 'Kaydediliyor...' : 'Mevcut Dizilişi Kaydet'}
+                {isSavingMatch ? 'Kaydediliyor...' : 'Kadroyu Kaydet'}
             </button>
+
+            <button
+                onClick={onClearPitch}
+                disabled={!hasPlayersOnPitch}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                Sahayı Temizle
+            </button>
+
             {selectedMatchId && (
                 <Link
                     to={`/poll/${selectedMatchId}`}
@@ -45,7 +67,7 @@ function ActionButtons({
                     Maç Sonucu Oylaması
                 </Link>
             )}
-        </>
+        </div>
     );
 }
 
