@@ -40,6 +40,8 @@ const Carpet = () => {
     const [teamBScore, setTeamBScore] = useState('');
     const [isSavingScore, setIsSavingScore] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
+    const [isAligningPlayers, setIsAligningPlayers] = useState(false);
+    const [isSwitchingTeams, setIsSwitchingTeams] = useState(false);
 
     const pitchRefA = useRef(null);
     const pitchRefB = useRef(null);
@@ -445,6 +447,88 @@ const Carpet = () => {
         }
     };
 
+    const alignClosePlayers = () => {
+        setIsAligningPlayers(true);
+        const alignmentThreshold = 10; // Percentage threshold for considering players close
+
+        const alignPlayersInTeam = (players) => {
+            const playerEntries = Object.entries(players);
+            const updatedPlayers = { ...players };
+
+            // Group players by their x position (horizontal alignment)
+            const xGroups = {};
+            playerEntries.forEach(([id, data]) => {
+                const xPos = Math.round(data.xPercent / alignmentThreshold) * alignmentThreshold;
+                if (!xGroups[xPos]) xGroups[xPos] = [];
+                xGroups[xPos].push({ id, data });
+            });
+
+            // Align players in each x group
+            Object.values(xGroups).forEach(group => {
+                if (group.length > 1) {
+                    const avgX = group.reduce((sum, { data }) => sum + data.xPercent, 0) / group.length;
+                    group.forEach(({ id }) => {
+                        updatedPlayers[id] = {
+                            ...updatedPlayers[id],
+                            xPercent: avgX
+                        };
+                    });
+                }
+            });
+
+            // Group players by their y position (vertical alignment)
+            const yGroups = {};
+            playerEntries.forEach(([id, data]) => {
+                const yPos = Math.round(data.yPercent / alignmentThreshold) * alignmentThreshold;
+                if (!yGroups[yPos]) yGroups[yPos] = [];
+                yGroups[yPos].push({ id, data });
+            });
+
+            // Align players in each y group
+            Object.values(yGroups).forEach(group => {
+                if (group.length > 1) {
+                    const avgY = group.reduce((sum, { data }) => sum + data.yPercent, 0) / group.length;
+                    group.forEach(({ id }) => {
+                        updatedPlayers[id] = {
+                            ...updatedPlayers[id],
+                            yPercent: avgY
+                        };
+                    });
+                }
+            });
+
+            return updatedPlayers;
+        };
+
+        setPlayersOnPitchA(prev => alignPlayersInTeam(prev));
+        setPlayersOnPitchB(prev => alignPlayersInTeam(prev));
+        setIsAligningPlayers(false);
+        toast.success("Oyuncular hizalandı!");
+    };
+
+    const switchTeams = () => {
+        setIsSwitchingTeams(true);
+        const tempTeamA = { ...playersOnPitchA };
+        const tempTeamB = { ...playersOnPitchB };
+
+        // Update player positions to maintain their relative positions on the new side
+        const updatePositions = (players) => {
+            const updatedPlayers = {};
+            Object.entries(players).forEach(([id, data]) => {
+                updatedPlayers[id] = {
+                    ...data,
+                    xPercent: 100 - data.xPercent, // Mirror the x position
+                    yPercent: data.yPercent // Keep the same y position
+                };
+            });
+            return updatedPlayers;
+        };
+
+        setPlayersOnPitchA(updatePositions(tempTeamB));
+        setPlayersOnPitchB(updatePositions(tempTeamA));
+        setIsSwitchingTeams(false);
+        toast.success("Takımlar yer değiştirdi!");
+    };
 
     return (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
@@ -470,8 +554,12 @@ const Carpet = () => {
                                 onSharePitches={handleShareBothPitches}
                                 onClearPitch={clearPitch}
                                 onSaveMatch={handleSaveMatch}
+                                onAlignPlayers={alignClosePlayers}
+                                onSwitchTeams={switchTeams}
                                 isSharing={isSharing}
                                 isSavingMatch={isSavingMatch}
+                                isAligningPlayers={isAligningPlayers}
+                                isSwitchingTeams={isSwitchingTeams}
                                 hasPlayersOnPitch={Object.keys(playersOnPitchA).length > 0 || Object.keys(playersOnPitchB).length > 0}
                                 selectedMatchId={selectedMatchId}
                             />
