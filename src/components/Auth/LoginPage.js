@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
@@ -26,7 +26,6 @@ const LoginPage = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const from = location.state?.from?.pathname || "/";
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -39,7 +38,17 @@ const LoginPage = () => {
         setIsLoading(false);
         if (result.success) {
             toast.success("Başarıyla giriş yapıldı!");
-            navigate(from, { replace: true });
+            
+            // Check for redirectAfterLogin in localStorage
+            const redirectPath = localStorage.getItem('redirectAfterLogin');
+            if (redirectPath) {
+                localStorage.removeItem('redirectAfterLogin');
+                navigate(redirectPath, { replace: true });
+            } else {
+                // Fallback to the from location or home
+                const from = location.state?.from?.pathname || "/";
+                navigate(from, { replace: true });
+            }
         } else {
             toast.error(result.message || "Giriş başarısız. Lütfen bilgilerinizi kontrol edin.");
         }
@@ -48,6 +57,14 @@ const LoginPage = () => {
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
+
+    useEffect(() => {
+        const fromJWTError = localStorage.getItem('fromJWTError');
+        if (fromJWTError) {
+            toast.error('Oturum süreniz doldu. Lütfen tekrar giriş yapınız.');
+            localStorage.removeItem('fromJWTError');
+        }
+    }, []);
 
     return (
         <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">

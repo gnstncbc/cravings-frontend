@@ -541,7 +541,7 @@ const Carpet = () => {
                     </div>
                 )}
                 <div className='flex justify-between items-center mb-4'>
-                    <Link to="/" className="text-blue-400 hover:text-blue-300">&larr; Ana Sayfaya Dön</Link>
+                    {/* <Link to="/" className="text-blue-400 hover:text-blue-300">&larr; Ana Sayfaya Dön</Link> */}
                     <h1 className="text-2xl md:text-3xl font-bold text-center flex-grow">Halı Saha Kadro Oluşturucu</h1>
                 </div>
 
@@ -607,6 +607,9 @@ const Carpet = () => {
                         <PitchDisplay pitchId="pitchAreaB" teamId="B" playersOnThisPitch={playersOnPitchB} pitchRef={pitchRefB} />
                     </div>
                 </div>
+                <footer className="mt-8 text-center text-gray-400 text-sm">
+                Güneş Tan Cebeci | 2025
+                </footer>
             </div>
             <DragOverlay dropAnimation={null} zIndex={100} modifiers={[snapCenterToCursor]}>
                 {activeId && activePlayerBaseData ? (
