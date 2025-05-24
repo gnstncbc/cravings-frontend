@@ -181,6 +181,9 @@ const Scoreboard = () => {
                     </div>
                 </div>
             </div>
+            <footer className="mt-8 text-center text-gray-400 text-sm">
+                Güneş Tan Cebeci | 2025
+            </footer>
         </div>
     );
 };
