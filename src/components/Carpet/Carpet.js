@@ -546,7 +546,7 @@ const Carpet = () => {
         const defaultPositions = {
             'Kaleci': { x: 50, y: 90 },
             'Bek': { x: 80, y: 70 }, // This will be overridden for specific players
-            'Defans': { x: 50, y: 70 },
+            'Stoper': { x: 50, y: 70 },
             'Orta Saha': { x: 50, y: 50 }, // This will be overridden for specific players
             'Forvet': { x: 50, y: 30 } // This will be overridden for specific players
         };
@@ -694,7 +694,7 @@ const Carpet = () => {
                                 matches={matches}
                                 selectedMatchId={selectedMatchId}
                                 onMatchSelected={(matchId) => {
-                                    // setSelectedMatchId(matchId); // loadMatchLineup will handle setting this if successful
+                                    setSelectedMatchId(matchId);
                                     if (matchId) {
                                         loadMatchLineup(matchId);
                                     } else {

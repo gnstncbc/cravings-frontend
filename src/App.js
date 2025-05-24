@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Home from "./components/Home"; // Ana sayfa (ikon seçimi)
 import Requests from "./components/Requests"; // İstekler listesi
@@ -15,6 +15,13 @@ import { Link } from "react-router-dom";
 // Basic Navbar for navigation and auth status
 const Navbar = () => {
     const { isAuthenticated, user, logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        logout();
+        // Navigation will be handled by the logout function in AuthContext
+    };
+
     return (
         <nav className="bg-gray-800 text-white p-4 shadow-md sticky top-0 z-50">
             <div className="container mx-auto flex justify-between items-center">
@@ -32,7 +39,7 @@ const Navbar = () => {
                         <>
                             <span className="text-sm">Hoşgeldin, {user?.firstname || user?.username || 'Kullanıcı'}!</span>
                             <button 
-                                onClick={logout} 
+                                onClick={handleLogout} 
                                 className="bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded text-sm font-medium transition-colors"
                             >
                                 Çıkış Yap
@@ -94,17 +101,7 @@ const AppContent = () => {
                         } 
                     />
 
-                    {/* Example of a route that requires a specific role, e.g., ADMIN */}
-                    {/* <Route 
-                        path="/admin/dashboard" 
-                        element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}>
-                                <AdminDashboard />
-                            </ProtectedRoute>
-                        } 
-                    /> */}
-
-                    {/* These routes also likely need protection. Add ProtectedRoute as needed. */}
+                    {/* These routes don't need protection */}
                     <Route path="/craving-tracker" element={<CravingTracker />} />
                     <Route path="/requests" element={<Requests />} />
 
