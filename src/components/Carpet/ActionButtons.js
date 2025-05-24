@@ -7,15 +7,35 @@ function ActionButtons({
     onSaveMatch,
     onAlignPlayers,
     onSwitchTeams,
+    onOpenTeamGenerator,
+    onQuickGenerateTeams,
     isSharing,
     isSavingMatch,
     isAligningPlayers,
     isSwitchingTeams,
     hasPlayersOnPitch,
-    selectedMatchId
+    selectedMatchId,
+    canQuickGenerate
 }) {
     return (
         <div className="space-y-2">
+            <div className="flex gap-2">
+                <button
+                    onClick={onOpenTeamGenerator}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded"
+                >
+                    Otomatik Kadro Oluşturucu
+                </button>
+                <button
+                    onClick={onQuickGenerateTeams}
+                    disabled={!canQuickGenerate}
+                    className="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed text-2xl flex items-center justify-center"
+                    title="Rastgele Takım Oluştur (Seçili oyuncu ve pozisyonlarla)"
+                >
+                    🎲
+                </button>
+            </div>
+
             <button
                 onClick={onSharePitches}
                 disabled={!hasPlayersOnPitch || isSharing}
