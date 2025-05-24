@@ -22,6 +22,7 @@ import PitchDisplay from './PitchDisplay';
 import ActionButtons from './ActionButtons';
 import MatchControls from './MatchControls';
 import PlayerManagement from './PlayerManagement';
+import TeamGenerator from '../Scoreboard/TeamGenerator';
 
 const Carpet = () => {
     const [allPlayers, setAllPlayers] = useState([]);
@@ -42,6 +43,8 @@ const Carpet = () => {
     const [isSharing, setIsSharing] = useState(false);
     const [isAligningPlayers, setIsAligningPlayers] = useState(false);
     const [isSwitchingTeams, setIsSwitchingTeams] = useState(false);
+    const [isTeamGeneratorOpen, setIsTeamGeneratorOpen] = useState(false);
+    const [teamGenState, setTeamGenState] = useState({ selectedPlayers: [], playerPositions: {} });
 
     const pitchRefA = useRef(null);
     const pitchRefB = useRef(null);
@@ -530,6 +533,50 @@ const Carpet = () => {
         toast.success("Takımlar yer değiştirdi!");
     };
 
+    const handleTeamGeneratorClose = () => {
+        setIsTeamGeneratorOpen(false);
+    };
+
+    const handleTeamGeneratorTeams = (teamA, teamB) => {
+        // Convert team arrays to the format expected by the pitch
+        const newPitchA = {};
+        const newPitchB = {};
+
+        // Default positions for players
+        const defaultPositions = {
+            'Kaleci': { x: 50, y: 90 },
+            'Bek': { x: 80, y: 70 }, // This will be overridden for specific players
+            'Defans': { x: 50, y: 70 },
+            'Orta Saha': { x: 50, y: 50 }, // This will be overridden for specific players
+            'Forvet': { x: 50, y: 30 } // This will be overridden for specific players
+        };
+
+        // Assign players to teams with their positions
+        teamA.forEach((player) => {
+            const position = player.position || 'Orta Saha';
+            const pos = defaultPositions[position];
+            newPitchA[player.id] = {
+                name: player.name,
+                xPercent: position === 'Bek' || position === 'Orta Saha' || position === 'Forvet' ? player.xCoordinate : pos.x,
+                yPercent: pos.y
+            };
+        });
+
+        teamB.forEach((player) => {
+            const position = player.position || 'Orta Saha';
+            const pos = defaultPositions[position];
+            newPitchB[player.id] = {
+                name: player.name,
+                xPercent: position === 'Bek' || position === 'Orta Saha' || position === 'Forvet' ? player.xCoordinate : pos.x,
+                yPercent: pos.y
+            };
+        });
+
+        setPlayersOnPitchA(newPitchA);
+        setPlayersOnPitchB(newPitchB);
+        setIsTeamGeneratorOpen(false);
+    };
+
     return (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
             <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8 font-sans">
@@ -556,12 +603,92 @@ const Carpet = () => {
                                 onSaveMatch={handleSaveMatch}
                                 onAlignPlayers={alignClosePlayers}
                                 onSwitchTeams={switchTeams}
+                                onOpenTeamGenerator={() => setIsTeamGeneratorOpen(true)}
+                                onQuickGenerateTeams={() => {
+                                    // Use the last selected players and positions
+                                    const { selectedPlayers, playerPositions } = teamGenState;
+                                    if (!selectedPlayers || selectedPlayers.length < 2) return;
+                                    // Copy TeamGenerator's generateTeams logic
+                                    // Group players by their positions
+                                    const playersByPosition = {};
+                                    selectedPlayers.forEach(player => {
+                                        const position = playerPositions[player.id] || 'Orta Saha';
+                                        if (!playersByPosition[position]) {
+                                            playersByPosition[position] = [];
+                                        }
+                                        playersByPosition[position].push({ ...player, position });
+                                    });
+                                    // Initialize teams
+                                    const teamA = [];
+                                    const teamB = [];
+                                    const teamAMidfielders = Math.ceil(playersByPosition['Orta Saha']?.length / 2) || 0;
+                                    const teamBMidfielders = Math.floor(playersByPosition['Orta Saha']?.length / 2) || 0;
+                                    const teamAForwards = Math.ceil(playersByPosition['Forvet']?.length / 2) || 0;
+                                    const teamBForwards = Math.floor(playersByPosition['Forvet']?.length / 2) || 0;
+                                    Object.entries(playersByPosition).forEach(([position, players]) => {
+                                        const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
+                                        shuffledPlayers.forEach((player, index) => {
+                                            const team = index % 2 === 0 ? teamA : teamB;
+                                            if (position === 'Bek') {
+                                                const existingBeks = team.filter(p => p.position === 'Bek');
+                                                const xCoordinate = existingBeks.length % 2 === 0 ? 80 : 20;
+                                                team.push({ ...player, xCoordinate });
+                                            } else if (position === 'Orta Saha') {
+                                                const existingMidfielders = team.filter(p => p.position === 'Orta Saha');
+                                                let xCoordinate;
+                                                if (team === teamA) {
+                                                    if (teamAMidfielders === 1) {
+                                                        xCoordinate = 50;
+                                                    } else {
+                                                        xCoordinate = existingMidfielders.length === 0 ? 70 : 30;
+                                                    }
+                                                } else {
+                                                    if (teamBMidfielders === 1) {
+                                                        xCoordinate = 50;
+                                                    } else {
+                                                        xCoordinate = existingMidfielders.length === 0 ? 70 : 30;
+                                                    }
+                                                }
+                                                team.push({ ...player, xCoordinate });
+                                            } else if (position === 'Forvet') {
+                                                const existingForwards = team.filter(p => p.position === 'Forvet');
+                                                let xCoordinate;
+                                                if (team === teamA) {
+                                                    if (teamAForwards === 1) {
+                                                        xCoordinate = 50;
+                                                    } else if (teamAForwards === 2) {
+                                                        xCoordinate = existingForwards.length === 0 ? 70 : 30;
+                                                    } else {
+                                                        if (existingForwards.length === 0) xCoordinate = 30;
+                                                        else if (existingForwards.length === 1) xCoordinate = 50;
+                                                        else xCoordinate = 70;
+                                                    }
+                                                } else {
+                                                    if (teamBForwards === 1) {
+                                                        xCoordinate = 50;
+                                                    } else if (teamBForwards === 2) {
+                                                        xCoordinate = existingForwards.length === 0 ? 70 : 30;
+                                                    } else {
+                                                        if (existingForwards.length === 0) xCoordinate = 30;
+                                                        else if (existingForwards.length === 1) xCoordinate = 50;
+                                                        else xCoordinate = 70;
+                                                    }
+                                                }
+                                                team.push({ ...player, xCoordinate });
+                                            } else {
+                                                team.push(player);
+                                            }
+                                        });
+                                    });
+                                    handleTeamGeneratorTeams(teamA, teamB);
+                                }}
                                 isSharing={isSharing}
                                 isSavingMatch={isSavingMatch}
                                 isAligningPlayers={isAligningPlayers}
                                 isSwitchingTeams={isSwitchingTeams}
                                 hasPlayersOnPitch={Object.keys(playersOnPitchA).length > 0 || Object.keys(playersOnPitchB).length > 0}
                                 selectedMatchId={selectedMatchId}
+                                canQuickGenerate={teamGenState.selectedPlayers && teamGenState.selectedPlayers.length >= 2}
                             />
                             <MatchControls
                                 matches={matches}
@@ -610,6 +737,16 @@ const Carpet = () => {
                 <footer className="mt-8 text-center text-gray-400 text-sm">
                 Güneş Tan Cebeci | 2025
                 </footer>
+                <TeamGenerator
+                    isOpen={isTeamGeneratorOpen}
+                    onClose={handleTeamGeneratorClose}
+                    players={allPlayers}
+                    onTeamsGenerated={(teamA, teamB) => {
+                        handleTeamGeneratorTeams(teamA, teamB);
+                        setTeamGenState(prev => ({ ...prev, generatedTeams: { teamA, teamB } }));
+                    }}
+                    onStateChange={(state) => setTeamGenState(state)}
+                />
             </div>
             <DragOverlay dropAnimation={null} zIndex={100} modifiers={[snapCenterToCursor]}>
                 {activeId && activePlayerBaseData ? (
