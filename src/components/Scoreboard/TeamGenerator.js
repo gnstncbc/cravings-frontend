@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../Carpet/api';
 
-const POSITIONS = ['Kaleci', 'Bek', 'Defans', 'Orta Saha', 'Forvet'];
+const POSITIONS = ['Kaleci', 'Bek', 'Stoper', 'Orta Saha', 'Forvet'];
 
 const TeamGenerator = ({ isOpen, onClose, players, onTeamsGenerated, onStateChange }) => {
     const [searchTerm, setSearchTerm] = useState('');

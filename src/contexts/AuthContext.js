@@ -125,12 +125,19 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
         setUser(null);
         delete apiClient.defaults.headers.common['Authorization'];
-        // Navigate to login or home page after logout can be handled in the component calling logout
-        // For example, using navigate('/login');
+        window.location.href = '/login'; // Force a full page reload to clear any stale state
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, register, isLoading, isAuthenticated: !!user }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            token, 
+            login, 
+            logout, 
+            register, 
+            isLoading, 
+            isAuthenticated: !!token && !!user // More strict authentication check
+        }}>
             {children}
         </AuthContext.Provider>
     );
