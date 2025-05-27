@@ -1,15 +1,18 @@
+// src/App.js
+// MODIFIED FILE
 import React from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import Home from "./components/Home"; // Ana sayfa (ikon seçimi)
-import Requests from "./components/Requests"; // İstekler listesi
-import CravingTracker from "./components/CravingTracker"; // Yeni takip sayfası
-import Carpet from "./components/Carpet/Carpet.js"; // Halı saha sayfası
-import PollPage from "./components/PollPage/PollPage.js"; // Oylama sayfası
+import Home from "./components/Home";
+import Requests from "./components/Requests";
+import CravingTracker from "./components/CravingTracker";
+import Carpet from "./components/Carpet/Carpet.js";
+import PollPage from "./components/PollPage/PollPage.js";
 import Scoreboard from "./components/Scoreboard/Scoreboard.js";
 import LoginPage from "./components/Auth/LoginPage";
 import RegisterPage from "./components/Auth/RegisterPage";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
+import AdminPage from "./components/Admin/AdminPage"; // Import AdminPage
 import { Link } from "react-router-dom";
 
 // Basic Navbar for navigation and auth status
@@ -31,6 +34,9 @@ const Navbar = () => {
                         <>
                             <Link to="/carpet" className="hover:text-blue-300">Kadro Oluşturucu</Link>
                             <Link to="/scoreboard" className="hover:text-blue-300">Puan Durumu</Link>
+                            {user?.roles?.includes('ADMIN') && ( // Show Admin link only if user is ADMIN
+                                <Link to="/admin" className="text-yellow-400 hover:text-yellow-300">Admin Panel</Link>
+                            )}
                         </>
                     )}
                 </div>
@@ -38,8 +44,8 @@ const Navbar = () => {
                     {isAuthenticated ? (
                         <>
                             <span className="text-sm">Hoşgeldin, {user?.firstname || user?.username || 'Kullanıcı'}!</span>
-                            <button 
-                                onClick={handleLogout} 
+                            <button
+                                onClick={handleLogout}
                                 className="bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded text-sm font-medium transition-colors"
                             >
                                 Çıkış Yap
@@ -58,9 +64,8 @@ const Navbar = () => {
 };
 
 const AppContent = () => {
-    const { isLoading } = useAuth(); // Access isLoading from AuthContext
+    const { isLoading } = useAuth();
 
-    // Display a global loading indicator if AuthContext is still figuring out auth state
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center">
@@ -73,39 +78,40 @@ const AppContent = () => {
     return (
         <>
             <Navbar />
-            <div className="pt-2"> {/* Add some padding if navbar is sticky/fixed */}
+            <div className="pt-2">
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
 
-                    {/* Protected Routes */}
-                    <Route 
-                        path="/carpet" 
-                        element={
-                                <Carpet />
-                        } 
+                    <Route
+                        path="/carpet"
+                        element={<Carpet />}
                     />
-                    <Route 
-                        path="/scoreboard" 
-                        element={
-                                <Scoreboard />
-                        } 
+                    <Route
+                        path="/scoreboard"
+                        element={<Scoreboard />}
                     />
-                    <Route 
-                        path="/poll/:matchId" 
+                    <Route
+                        path="/poll/:matchId"
                         element={
                             <ProtectedRoute>
                                 <PollPage />
                             </ProtectedRoute>
-                        } 
+                        }
+                    />
+                    <Route
+                        path="/admin"
+                        element={
+                            <ProtectedRoute allowedRoles={['ADMIN']}> {/* Protect Admin Route */}
+                                <AdminPage />
+                            </ProtectedRoute>
+                        }
                     />
 
-                    {/* These routes don't need protection */}
                     <Route path="/craving-tracker" element={<CravingTracker />} />
                     <Route path="/requests" element={<Requests />} />
 
-                    {/* Catch-all for undefined routes - optional */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </div>
