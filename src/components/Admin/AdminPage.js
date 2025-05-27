@@ -1,11 +1,12 @@
 // src/components/Admin/AdminPage.js
-// NEW FILE
-import React, { useState, useEffect } from 'react';
+// MODIFIED FILE
+import React, { useState } from 'react';
 import { apiClient } from '../Carpet/api';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import UserList from './UserList';
 import MatchPollAdminActions from './MatchPollAdminActions';
+import ReferralCodeAdminActions from './ReferralCodeAdminActions'; // Import the new component
 
 const AdminPage = () => {
     const [isLoading, setIsLoading] = useState(false);
@@ -18,10 +19,10 @@ const AdminPage = () => {
         toast.info("Attempting to populate player stats...", { autoClose: false });
         try {
             await apiClient.post('/admin/populate-player-stats');
-            toast.dismiss();
+            toast.dismiss(); // Dismiss the info toast
             toast.success("Player stats population process initiated successfully.");
         } catch (error) {
-            toast.dismiss();
+            toast.dismiss(); // Dismiss the info toast
             console.error("Error populating player stats:", error.response?.data || error.message);
             toast.error(error.response?.data?.message || "Failed to initiate player stats population.");
         } finally {
@@ -61,7 +62,10 @@ const AdminPage = () => {
                     </p>
                 </section>
 
-                <div className="flex flex-col lg:flex-row gap-4">
+                {/* Referral Code Management Section - NEW */}
+                <ReferralCodeAdminActions />
+
+                <div className="flex flex-col lg:flex-row gap-8"> {/* Increased gap for better separation */}
                     {/* User Management Section */}
                     <div className="lg:w-1/2">
                         <UserList />
