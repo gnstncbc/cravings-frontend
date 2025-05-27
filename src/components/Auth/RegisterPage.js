@@ -10,13 +10,14 @@ const RegisterPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [referralCode, setReferralCode] = useState(''); // New state for referral code
     const [isLoading, setIsLoading] = useState(false);
     const { register } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!firstname || !lastname || !email || !password || !confirmPassword) {
+        if (!firstname || !lastname || !email || !password || !confirmPassword || !referralCode) { // Added referralCode check
             toast.error("Lütfen tüm alanları doldurun.");
             return;
         }
@@ -28,14 +29,17 @@ const RegisterPage = () => {
             toast.error("Şifre en az 6 karakter olmalıdır.");
             return;
         }
-        // Basic email validation (more robust validation can be added)
         if (!/\S+@\S+\.\S+/.test(email)) {
             toast.error("Lütfen geçerli bir e-posta adresi girin.");
             return;
         }
+        if (referralCode.trim().length === 0) { // More specific check for referral code
+            toast.error("Lütfen referans kodunu girin.");
+            return;
+        }
 
         setIsLoading(true);
-        const userData = { firstname, lastname, email, password, role: "USER" };
+        const userData = { firstname, lastname, email, password, role: "USER", referralCode }; // Added referralCode to userData
         const result = await register(userData);
         setIsLoading(false);
 
@@ -118,12 +122,26 @@ const RegisterPage = () => {
                             disabled={isLoading}
                         />
                     </div>
+                    {/* New Referral Code Input Field */}
+                    <div>
+                        <label htmlFor="referralCode" className="block text-sm font-medium text-gray-300 mb-1">Referans Kodu</label>
+                        <input
+                            type="text"
+                            id="referralCode"
+                            value={referralCode}
+                            onChange={(e) => setReferralCode(e.target.value)}
+                            className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-white"
+                            required
+                            disabled={isLoading}
+                            placeholder="Size verilen referans kodunu girin"
+                        />
+                    </div>
                     <button
                         type="submit"
                         className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-md transition-colors duration-200 disabled:opacity-70 flex items-center justify-center"
                         disabled={isLoading}
                     >
-                         {isLoading ? (
+                        {isLoading ? (
                             <>
                                 <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
                                 Kayıt Olunuyor...
@@ -141,4 +159,4 @@ const RegisterPage = () => {
     );
 };
 
-export default RegisterPage; 
+export default RegisterPage;
