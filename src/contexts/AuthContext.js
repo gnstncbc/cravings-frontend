@@ -43,7 +43,8 @@ export const AuthProvider = ({ children }) => {
                     username: decodedToken.sub, 
                     roles: decodedToken.roles || [], 
                     // Add other relevant fields if present in JWT like email, firstname, lastname
-                    email: decodedToken.email,
+                    // email: decodedToken.email,
+                    email: decodedToken.sub, // Assuming sub is the email
                     firstname: decodedToken.firstname,
                     lastname: decodedToken.lastname,
                 });
