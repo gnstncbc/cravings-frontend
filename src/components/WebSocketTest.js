@@ -8,7 +8,6 @@ import 'react-toastify/dist/ReactToastify.css';
 const WS_URL_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 const WS_ENDPOINT = `${WS_URL_BASE}/ws`;
 
-// Rastgele renkler için bir dizi tanımlayalım
 const RANDOM_COLORS = [
     'bg-green-600',
     'bg-purple-600',
@@ -16,11 +15,10 @@ const RANDOM_COLORS = [
     'bg-pink-600',
     'bg-teal-600',
     'bg-red-600',
-    'bg-orange-600', // Yeni bir renk ekleyelim
-    'bg-lime-600'    // Yeni bir renk daha ekleyelim
+    'bg-orange-600',
+    'bg-lime-600'
 ];
 
-// Rastgele bir renk sınıfı seçen yardımcı fonksiyon
 const getRandomColorClass = () => {
     return RANDOM_COLORS[Math.floor(Math.random() * RANDOM_COLORS.length)];
 };
@@ -35,8 +33,11 @@ function WebSocketTest() {
     const [createRoomLoading, setCreateRoomLoading] = useState(false);
     const [joinRoomCodeInput, setJoinRoomCodeInput] = useState('');
     const [joinRoomLoading, setJoinRoomLoading] = useState(false);
-    // Yeni: Kullanıcıların renklerini tutacak state
     const [userColors, setUserColors] = useState({}); 
+    
+    const [usersInRoom, setUsersInRoom] = useState([]);
+    const [teamACaptain, setTeamACaptain] = useState('');
+    const [teamBCaptain, setTeamBCaptain] = useState('');
 
     const messagesEndRef = useRef(null);
 
@@ -111,7 +112,10 @@ function WebSocketTest() {
             setRoomCode('');
             setJoinRoomCodeInput('');
             setReceivedMessages([]);
-            setUserColors({}); // Bağlantı kesildiğinde renk eşlemesini temizle
+            setUsersInRoom([]);
+            setTeamACaptain('');
+            setTeamBCaptain('');
+            setUserColors({});
         };
 
         client.onStompError = (frame) => {
@@ -134,7 +138,10 @@ function WebSocketTest() {
             setRoomCode('');
             setJoinRoomCodeInput('');
             setReceivedMessages([]);
-            setUserColors({}); // Bağlantı kesildiğinde renk eşlemesini temizle
+            setUsersInRoom([]);
+            setTeamACaptain('');
+            setTeamBCaptain('');
+            setUserColors({});
         } else {
             toast.warn("Kesilecek bir bağlantı yok.");
         }
@@ -151,10 +158,10 @@ function WebSocketTest() {
 
     useEffect(() => {
         if (stompClient && stompClient.connected && roomCode && !authLoading) {
-            const currentUserUsername = user?.username; // Değişiklik burada!
+            const currentUserUsername = user?.username; 
 
             console.log(`Subscribing to /topic/chat/${roomCode} for user: ${currentUserUsername}`);
-            const subscription = stompClient.subscribe(`/topic/chat/${roomCode}`, message => {
+            const chatSubscription = stompClient.subscribe(`/topic/chat/${roomCode}`, message => {
                 const chatMessage = JSON.parse(message.body);
                 
                 let messageType;
@@ -165,14 +172,12 @@ function WebSocketTest() {
                     assignedColorClass = 'bg-yellow-700';
                 } else if (currentUserUsername && chatMessage.sender === currentUserUsername) {
                     messageType = 'sent'; 
-                    assignedColorClass = 'bg-blue-600'; // Kendi gönderdiğin mesajlar sabit renk
+                    assignedColorClass = 'bg-blue-600';
                 } else {
-                    messageType = 'received'; // Başka birinden gelen mesaj
-                    // Gönderici için zaten bir renk atanmış mı kontrol et
+                    messageType = 'received';
                     if (userColors[chatMessage.sender]) {
                         assignedColorClass = userColors[chatMessage.sender];
                     } else {
-                        // Atanmamışsa yeni bir renk seç ve kaydet
                         const newColor = getRandomColorClass();
                         assignedColorClass = newColor;
                         setUserColors(prevColors => ({
@@ -185,16 +190,54 @@ function WebSocketTest() {
                 setReceivedMessages(prevMessages => [...prevMessages, { ...chatMessage, type: messageType, colorClass: assignedColorClass }]);
                 console.log('Received message:', { ...chatMessage, type: messageType, colorClass: assignedColorClass }); 
             });
+
+            // Oda durumu güncellemeleri için abonelik
+            const roomStatusSubscription = stompClient.subscribe(`/topic/room-status/${roomCode}`, message => {
+                const roomStatus = JSON.parse(message.body);
+                console.log('Received room status (from topic):', roomStatus);
+                setUsersInRoom(roomStatus.usersInRoom || []);
+                setTeamACaptain(roomStatus.teamACaptainEmail || '');
+                setTeamBCaptain(roomStatus.teamBCaptainEmail || '');
+            });
+
+            // YENİ: Kullanıcı odaya katıldıktan ve abonelikler kurulduktan sonra
+            // kendi özel kuyruğundan güncel oda durumunu talep etsin.
+            // Bu, 'room-joined' mesajını aldıktan sonra tetiklenmeli.
+            const userRoomStatusSubscription = stompClient.subscribe(`/user/queue/room-status/${roomCode}`, message => {
+                const roomStatus = JSON.parse(message.body);
+                console.log('Received room status (from user queue):', roomStatus);
+                setUsersInRoom(roomStatus.usersInRoom || []);
+                setTeamACaptain(roomStatus.teamACaptainEmail || '');
+                setTeamBCaptain(roomStatus.teamBCaptainEmail || '');
+            });
+            
+            // Eğer stompClient bağlı ve oda kodu mevcutsa, oda durumunu talep et
+            // Bu, abonelikler kurulduktan sonra çalışacak
+            setTimeout(() => { // Kısa bir gecikme ekleyerek aboneliklerin tam olarak kurulmasını bekle
+                if (stompClient && stompClient.connected && roomCode) {
+                    stompClient.publish({ destination: `/app/chat/requestRoomStatus/${roomCode}` });
+                    console.log(`Requested room status for ${roomCode}`);
+                }
+            }, 500); // 500ms gecikme
+
             return () => {
                 console.log(`Unsubscribing from /topic/chat/${roomCode}`);
-                if (subscription) {
-                    subscription.unsubscribe();
+                if (chatSubscription) {
+                    chatSubscription.unsubscribe();
+                }
+                console.log(`Unsubscribing from /topic/room-status/${roomCode}`);
+                if (roomStatusSubscription) {
+                    roomStatusSubscription.unsubscribe();
+                }
+                console.log(`Unsubscribing from /user/queue/room-status/${roomCode}`);
+                if (userRoomStatusSubscription) {
+                    userRoomStatusSubscription.unsubscribe();
                 }
             };
         } else if (!authLoading) {
             console.log('Skipping subscription: STOMP Client not ready, not connected, no roomCode, or auth still loading.');
         }
-    }, [stompClient, roomCode, user?.username, authLoading, userColors]); // userColors dependency olarak eklendi
+    }, [stompClient, roomCode, user?.username, authLoading, userColors]); 
 
     const sendMessage = () => {
         if (!stompClient || !stompClient.connected) {
@@ -227,6 +270,12 @@ function WebSocketTest() {
             toast.info(`Zaten bir odadasınız: ${roomCode}. Yeni bir oda oluşturmak için mevcut bağlantıyı kesin.`);
             return;
         }
+        
+        if (!user || !user.roles || !user.roles.includes('ADMIN')) {
+            toast.error("Bu işlemi yapmak için yetkiniz bulunmamaktadır. Lütfen yöneticiden kod alın ve odaya katılın.");
+            return;
+        }
+
         setCreateRoomLoading(true);
         stompClient.publish({ destination: '/app/chat/createRoom' });
     };
@@ -247,6 +296,32 @@ function WebSocketTest() {
         setJoinRoomLoading(true);
         stompClient.publish({ destination: `/app/chat/joinRoom/${joinRoomCodeInput.trim()}` });
     };
+
+    const handleSetCaptains = () => {
+        if (!stompClient || !stompClient.connected || !roomCode) {
+            toast.error("Kaptanları ayarlamak için bir odaya bağlı olmanız gerekir.");
+            return;
+        }
+        if (!user || !user.roles || !user.roles.includes('ADMIN')) {
+            toast.error("Kaptanları ayarlamak için yönetici yetkiniz bulunmamaktadır.");
+            return;
+        }
+        if (!teamACaptain || !teamBCaptain) {
+            toast.error("Lütfen her iki takım için de kaptan seçin.");
+            return;
+        }
+        if (teamACaptain === teamBCaptain) {
+            toast.error("Takım A ve Takım B kaptanları aynı kişi olamaz.");
+            return;
+        }
+
+        stompClient.publish({
+            destination: `/app/chat/setCaptains/${roomCode}`,
+            body: JSON.stringify({ teamACaptainEmail: teamACaptain, teamBCaptainEmail: teamBCaptain })
+        });
+        toast.success("Kaptanlar başarıyla ayarlandı!");
+    };
+
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
@@ -305,15 +380,88 @@ function WebSocketTest() {
                 </div>
             </div>
             
-            {/* Gelen Mesajlar kutusu */}
-            <div className="w-full max-w-md bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col">
+            {isConnected && roomCode && (
+                <div className="w-full max-w-md bg-gray-800 p-6 rounded-lg shadow-lg mb-6">
+                    <h2 className="text-xl font-semibold mb-4 text-center">Oda Durumu</h2>
+                    <div className="mb-4">
+                        <h3 className="text-lg font-medium mb-2">Odadaki Kullanıcılar:</h3>
+                        {usersInRoom.length > 0 ? (
+                            <ul className="list-disc list-inside text-gray-300">
+                                {usersInRoom.map((userEmail, index) => (
+                                    <li key={index}>{userEmail.split('@')[0]}</li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-gray-400">Odada başka kullanıcı yok.</p>
+                        )}
+                    </div>
+
+                    {user?.roles?.includes('ADMIN') && (
+                        <div className="mt-4 border-t border-gray-700 pt-4">
+                            <h3 className="text-lg font-medium mb-2">Kaptan Seçimi (Yönetici)</h3>
+                            <div className="flex flex-col space-y-3">
+                                <div>
+                                    <label htmlFor="teamACaptain" className="block text-sm font-medium text-gray-400 mb-1">Takım A Kaptanı:</label>
+                                    <select
+                                        id="teamACaptain"
+                                        value={teamACaptain}
+                                        onChange={(e) => setTeamACaptain(e.target.value)}
+                                        className="w-full p-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="">Seçiniz</option>
+                                        {usersInRoom.map((userEmail) => (
+                                            <option key={userEmail} value={userEmail}>
+                                                {userEmail.split('@')[0]}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="teamBCaptain" className="block text-sm font-medium text-gray-400 mb-1">Takım B Kaptanı:</label>
+                                    <select
+                                        id="teamBCaptain"
+                                        value={teamBCaptain}
+                                        onChange={(e) => setTeamBCaptain(e.target.value)}
+                                        className="w-full p-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="">Seçiniz</option>
+                                        {usersInRoom.map((userEmail) => (
+                                            <option key={userEmail} value={userEmail}>
+                                                {userEmail.split('@')[0]}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <button
+                                    onClick={handleSetCaptains}
+                                    disabled={!teamACaptain || !teamBCaptain || teamACaptain === teamBCaptain}
+                                    className={`px-4 py-2 rounded-lg font-semibold transition duration-300 ${(!teamACaptain || !teamBCaptain || teamACaptain === teamBCaptain) ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                                >
+                                    Kaptanları Ayarla
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {(teamACaptain || teamBCaptain) && (
+                        <div className="mt-4 border-t border-gray-700 pt-4">
+                            <h3 className="text-lg font-medium mb-2">Seçili Kaptanlar:</h3>
+                            <p className="text-gray-300">Takım A Kaptanı: <span className="font-bold text-blue-400">{teamACaptain ? teamACaptain.split('@')[0] : 'Yok'}</span></p>
+                            <p className="text-gray-300">Takım B Kaptanı: <span className="font-bold text-red-400">{teamBCaptain ? teamBCaptain.split('@')[0] : 'Yok'}</span></p>
+                        </div>
+                    )}
+                </div>
+            )}
+            
+            <div className="w-full max-w-md bg-gray-800 p-6 rounded-lg shadow-lg mb-6">
                 <h2 className="text-xl font-semibold mb-4 text-center">Gelen Mesajlar</h2>
                 <div className="h-96 overflow-y-auto bg-gray-700 p-4 rounded-lg border border-gray-600 flex flex-col space-y-2 stable-scrollbar">
                     {receivedMessages.map((msg, index) => {
                         const bubbleAlignmentClass = msg.type === 'sent' ? 'justify-end' : 'justify-start';
                         const bubbleColorAndShapeClass = 
-                            msg.type === 'system' ? 'bg-yellow-700 italic rounded-md text-white' :
-                            `${msg.colorClass} ${msg.type === 'sent' ? 'rounded-br-none' : 'rounded-bl-none'} text-white`; // msg.colorClass'ı kullan
+                                msg.type === 'system'
+                                ? 'bg-yellow-700 rounded-md text-white text-xxl font-bold'
+                                : `${msg.colorClass} ${msg.type === 'sent' ? 'rounded-br-none' : 'rounded-bl-none'} text-white`;
 
                         return (
                             <div
@@ -322,9 +470,11 @@ function WebSocketTest() {
                             >
                                 <div className={`p-3 rounded-lg max-w-[80%] ${bubbleColorAndShapeClass}`}>
                                     {msg.type !== 'system' && (
-                                        <div className="font-bold text-sm mb-1">{msg.sender}</div>
+                                        <div className="font-bold text-sm mb-1">{msg.sender.split('@')[0]}</div>
                                     )}
-                                    <div className="text-sm">{msg.content}</div>
+                                    <div className="text-sm whitespace-pre-line">
+                                        {msg.content}
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -333,7 +483,6 @@ function WebSocketTest() {
                 </div>
             </div>
 
-            {/* Mesajlaşma başlıklı kutu (input ve gönder butonu) */}
             <div className="w-full max-w-md bg-gray-800 p-6 rounded-lg shadow-lg mt-6">
                 <div className="flex flex-col space-y-4">
                     <input
