@@ -476,6 +476,9 @@ function WebSocketTest() {
     if (authLoading) {
         return <div className="text-center text-white p-10">Kullanıcı bilgileri yükleniyor...</div>;
     }
+    if (!user || !user.email || !token) {
+        return <div className="text-center text-red-400 p-10">Giriş yapmadan bu sayfaya erişemezsiniz.</div>;
+    }
     const isCurrentPlayerCaptain = user.email === teamACaptain || user.email === teamBCaptain;
     const isCurrentPlayerTurn = user.email === currentPlayerSelectionTurn;
     const canSelectPlayers = isCurrentPlayerCaptain && isCurrentPlayerTurn && selectionInProgress;
