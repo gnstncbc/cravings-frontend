@@ -63,9 +63,17 @@ function WebSocketTest() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    useEffect(() => {
-        scrollToBottom();
-    }, [receivedMessages]);
+    const scrollToBottomDesktop = () => {
+    const chatContainer = document.querySelector('.desktop-chat-scroll');
+    if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+};
+
+useEffect(() => {
+    scrollToBottom();
+    scrollToBottomDesktop();
+}, [receivedMessages]);
 
 
     // Hata ayıklama için user objesini ve yüklenme durumunu takip edelim
@@ -642,7 +650,7 @@ function WebSocketTest() {
                     {/* Sağ Panel: Chat */}
                     <div className="md:col-span-1 bg-gray-800 p-4 rounded-lg flex flex-col h-[80vh]">
                         <h2 className="text-xl font-semibold border-b border-gray-600 pb-2 mb-4">Sohbet</h2>
-                        <div className="flex-grow overflow-y-auto pr-2 stable-scrollbar">
+                        <div className="flex-grow overflow-y-auto pr-2 stable-scrollbar desktop-chat-scroll">
                             {receivedMessages.slice().map((msg, index) => {
                                 const isCurrentUserMsg = msg.sender === user?.email;
                                 const senderDisplayName = isCurrentUserMsg ? "Sen" : msg.sender.split('@')[0];
