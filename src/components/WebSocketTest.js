@@ -54,6 +54,7 @@ function WebSocketTest() {
     const [currentPlayerSelectionTurn, setCurrentPlayerSelectionTurn] = useState('');
     const [selectionStatusMessage, setSelectionStatusMessage] = useState('');
     const [allPlayersForSelection, setAllPlayersForSelection] = useState([]);
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
 
     const messagesEndRef = useRef(null);
@@ -482,225 +483,363 @@ function WebSocketTest() {
     const isCurrentPlayerCaptain = user.email === teamACaptain || user.email === teamBCaptain;
     const isCurrentPlayerTurn = user.email === currentPlayerSelectionTurn;
     const canSelectPlayers = isCurrentPlayerCaptain && isCurrentPlayerTurn && selectionInProgress;
-    console.log(`[DEBUG] isCurrentPlayerCaptain: ${isCurrentPlayerCaptain}`);
-    console.log(`[DEBUG] isCurrentPlayerTurn: ${isCurrentPlayerTurn}`);
-    console.log(`[DEBUG] canSelectPlayers: ${canSelectPlayers}`);
     const teamASelectedCount = Object.keys(teamASelectedPlayers).length;
     const teamBSelectedCount = Object.keys(teamBSelectedPlayers).length;
+    
+    // Mobile View specific variables
+    const teamACaptainName = teamACaptain ? teamACaptain.split('@')[0] : 'Belirlenmedi';
+    const teamBCaptainName = teamBCaptain ? teamBCaptain.split('@')[0] : 'Belirlenmedi';
+    
+    // *** YENİ DEĞİŞİKLİK ***
+    // Takım seçimi bitti mi kontrolü
+    const isDraftingFinished = teamASelectedCount === 7 && teamBSelectedCount === 7;
+    // Vurgulama mantığı güncellendi: Seçim bitmişse vurgulama yapılmaz
+    const isTeamATurn = selectionInProgress && !isDraftingFinished && currentPlayerSelectionTurn === teamACaptain;
+    const isTeamBTurn = selectionInProgress && !isDraftingFinished && currentPlayerSelectionTurn === teamBCaptain;
+    // *** YENİ DEĞİŞİKLİK SONU ***
 
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white flex flex-col p-4">
-            <h1 className="text-3xl font-bold text-center mb-4">Takım Kurma Odası</h1>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-grow">
-                {/* Sol Panel: Oda Kontrolleri */}
-                <div className="md:col-span-1 bg-gray-800 p-4 rounded-lg flex flex-col space-y-4">
-                    <h2 className="text-xl font-semibold border-b border-gray-600 pb-2">Kontrol Paneli</h2>
-                    {!roomCode ? (
-                        <>
+        <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+            {/* --- DESKTOP VIEW --- */}
+            <div className="hidden md:flex flex-col p-4 flex-grow">
+                <h1 className="text-3xl font-bold text-center mb-4">Takım Kurma Odası</h1>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-grow">
+                    {/* Sol Panel: Oda Kontrolleri */}
+                    <div className="md:col-span-1 bg-gray-800 p-4 rounded-lg flex flex-col space-y-4">
+                        <h2 className="text-xl font-semibold border-b border-gray-600 pb-2">Kontrol Paneli</h2>
+                        {!roomCode ? (
+                            <>
+                                <div>
+                                    <h3 className="text-lg font-medium mb-2">Oda Oluştur (Admin)</h3>
+                                    <button
+                                        onClick={createRoom}
+                                        disabled={createRoomLoading || !user?.roles?.includes('ADMIN')}
+                                        className={`w-full px-4 py-2 rounded-lg font-semibold transition duration-300 ${(!user?.roles?.includes('ADMIN')) ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                                    >
+                                        {createRoomLoading ? 'Oluşturuluyor...' : 'Yeni Oda Oluştur'}
+                                    </button>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-medium mb-2">Odaya Katıl</h3>
+                                    <div className="flex">
+                                        <input
+                                            type="text"
+                                            value={joinRoomCodeInput}
+                                            onChange={e => setJoinRoomCodeInput(e.target.value)}
+                                            placeholder="Oda Kodu"
+                                            className="flex-grow p-2 bg-gray-700 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        />
+                                        <button
+                                            onClick={handleJoinRoom}
+                                            disabled={joinRoomLoading || !joinRoomCodeInput.trim()}
+                                            className={`px-4 py-2 rounded-r-lg font-semibold transition duration-300 bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed`}
+                                        >
+                                            {joinRoomLoading ? 'Katılıyor...' : 'Katıl'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
                             <div>
-                                <h3 className="text-lg font-medium mb-2">Oda Oluştur (Admin)</h3>
-                                <button
+                                <p className="text-lg font-semibold">Oda Kodu: <span className="text-yellow-400 font-mono">{roomCode}</span></p>
+                                <button onClick={endConnection} className="w-full mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition">
+                                    Odadan Ayrıl
+                                </button>
+                            </div>
+                        )}
+                        <div>
+                            <h3 className="text-lg font-medium mt-4">Odaki Kullanıcılar ({usersInRoom.length})</h3>
+                            <ul className="list-disc list-inside text-gray-300">
+                                {usersInRoom.map((userEmail, index) => (
+                                    <li key={index}>{userEmail.split('@')[0]}</li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {user?.roles?.includes('ADMIN') && roomCode && (
+                            <div className="space-y-2">
+                                <h3 className="text-lg font-medium mt-4">Kaptan Seçimi</h3>
+                                <div>
+                                    <label htmlFor="teamA_captain" className="block text-sm font-medium text-gray-400">Takım A Kaptanı</label>
+                                    <select id="teamA_captain" value={teamACaptain} onChange={(e) => setTeamACaptain(e.target.value)} className="w-full p-2 bg-gray-700 rounded-lg mt-1">
+                                        <option value="">Seçiniz...</option>
+                                        {usersInRoom.map((userEmail) => (
+                                            <option key={userEmail} value={userEmail}>{userEmail.split('@')[0]}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="teamB_captain" className="block text-sm font-medium text-gray-400">Takım B Kaptanı</label>
+                                    <select id="teamB_captain" value={teamBCaptain} onChange={(e) => setTeamBCaptain(e.target.value)} className="w-full p-2 bg-gray-700 rounded-lg mt-1">
+                                        <option value="">Seçiniz...</option>
+                                        {usersInRoom.map((userEmail) => (
+                                            <option key={userEmail} value={userEmail}>{userEmail.split('@')[0]}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <button onClick={handleSetCaptains} disabled={!teamACaptain || !teamBCaptain} className={`w-full px-4 py-2 rounded-lg font-semibold transition ${(!teamACaptain || !teamBCaptain) ? 'bg-gray-600 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>Kaptanları Ayarla</button>
+                            </div>
+                        )}
+
+                        {user?.roles?.includes('ADMIN') && roomCode && teamACaptain && teamBCaptain && !selectionInProgress && (
+                            <button onClick={handleStartSelection} className="w-full mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition">Takım Seçimini Başlat</button>
+                        )}
+                    </div>
+
+                    {/* Orta Panel: Seçim ve Takımlar */}
+                    <div className="md:col-span-2 bg-gray-800 p-4 rounded-lg flex flex-col">
+                        <h2 className="text-xl font-semibold border-b border-gray-600 pb-2">Takım Seçimi</h2>
+                        {selectionInProgress ? (
+                            <>
+                                <p className="text-gray-300 mt-2">{selectionStatusMessage}</p>
+                                <p className="text-gray-300 mt-2">Sıradaki: <span className="font-bold text-green-400">{currentPlayerSelectionTurn ? currentPlayerSelectionTurn.split('@')[0] : 'Bekleniyor...'}</span></p>
+
+                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-blue-400">Takım A ({teamASelectedCount}/7)</h3>
+                                        <ul className="mt-2 space-y-1 text-gray-200">
+                                            {Object.values(teamASelectedPlayers).map(player => <li key={player.id}>{player.name}</li>)}
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-red-400">Takım B ({teamBSelectedCount}/7)</h3>
+                                        <ul className="mt-2 space-y-1 text-gray-200">
+                                            {Object.values(teamBSelectedPlayers).map(player => <li key={player.id}>{player.name}</li>)}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 flex-grow overflow-y-auto">
+                                    <h3 className="text-lg font-semibold">Seçilebilecek Oyuncular</h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">
+                                        {availablePlayersForSelection.map(player => (
+                                            <button
+                                                key={player.id}
+                                                onClick={() => handleSelectPlayer(player.id)}
+                                                disabled={!canSelectPlayers}
+                                                className={`p-2 rounded-md text-center transition ${canSelectPlayers ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-900 text-gray-500 cursor-not-allowed'}`}
+                                            >
+                                                {player.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            roomCode ? (
+                                <div>
+                                    <p className="text-gray-300">Takım A Kaptanı: <span className="font-bold text-blue-400">{teamACaptain ? teamACaptain.split('@')[0] : 'Yok'}</span></p>
+                                    <p className="text-gray-300">Takım B Kaptanı: <span className="font-bold text-red-400">{teamBCaptain ? teamBCaptain.split('@')[0] : 'Yok'}</span></p>
+                                    <p className="mt-4 text-gray-400">Takım seçimi henüz başlamadı.</p>
+                                </div>
+                            ) : (
+                                <p className="mt-4 text-gray-400">Takım bilgilerini görmek için bir odaya katılın veya oluşturun.</p>
+                            )
+                        )}
+                    </div>
+
+                    {/* Sağ Panel: Chat */}
+                    <div className="md:col-span-1 bg-gray-800 p-4 rounded-lg flex flex-col h-[80vh]">
+                        <h2 className="text-xl font-semibold border-b border-gray-600 pb-2 mb-4">Sohbet</h2>
+                        <div className="flex-grow overflow-y-auto pr-2 stable-scrollbar">
+                            {receivedMessages.slice().map((msg, index) => {
+                                const isCurrentUserMsg = msg.sender === user?.email;
+                                const senderDisplayName = isCurrentUserMsg ? "Sen" : msg.sender.split('@')[0];
+                                const isSystemMessage = msg.sender === "Sistem";
+
+                                if (isSystemMessage) {
+                                    return (
+                                        <div key={index} className="flex justify-center my-2">
+                                            <div className="text-center text-xs text-yellow-400 bg-gray-700 rounded-full px-3 py-1">
+                                                {msg.content}
+                                            </div>
+                                        </div>
+                                    )
+                                }
+
+                                return (
+                                    <div key={index} className={`flex items-end mb-3 ${isCurrentUserMsg ? 'justify-end' : 'justify-start'}`}>
+                                        {!isCurrentUserMsg && (
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-2 flex-shrink-0 ${msg.colorClass}`}>
+                                                <span className="text-white font-bold text-sm">{msg.sender.charAt(0).toUpperCase()}</span>
+                                            </div>
+                                        )}
+                                        <div>
+                                            {!isCurrentUserMsg && (
+                                                <p className={`font-bold text-xs mb-1 text-left ${msg.colorClass ? msg.colorClass.replace('bg-', 'text-') : 'text-gray-400'}`}>
+                                                    {senderDisplayName}
+                                                </p>
+                                            )}
+                                            <div className={`relative rounded-lg px-4 py-2 max-w-xs sm:max-w-md break-words ${isCurrentUserMsg ? 'bg-blue-600 text-white' : `${msg.colorClass || 'bg-gray-700'} text-white`}`}>
+                                                {msg.content}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            <div ref={messagesEndRef} />
+                        </div>
+                        <div className="mt-4 flex">
+                            <input
+                                type="text"
+                                value={inputMessage}
+                                onChange={e => setInputMessage(e.target.value)}
+                                onKeyPress={e => { if (e.key === 'Enter') sendMessage(); }}
+                                placeholder={isConnected && roomCode ? 'Mesajınızı yazın...' : 'Bağlı değil'}
+                                className="flex-grow p-2 bg-gray-700 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                disabled={!isConnected || !roomCode}
+                            />
+                            <button
+                                onClick={sendMessage}
+                                disabled={!isConnected || !roomCode || !inputMessage.trim()}
+                                className={`px-4 py-2 rounded-r-lg font-semibold transition duration-300 bg-purple-600 hover:bg-purple-700 text-white disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed`}
+                            >
+                                Gönder
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* --- MOBILE VIEW --- */}
+            <div className="block md:hidden h-screen flex flex-col bg-gray-900">
+                {!roomCode ? (
+                    // STAGE 1: Join Room Screen
+                    <div className="flex flex-col items-center justify-center h-full p-4">
+                         <h1 className="text-3xl font-bold text-center mb-8">Takım Kurma Odası</h1>
+                         <div className="w-full max-w-sm space-y-4">
+                            <div>
+                                <label htmlFor="join-room-mobile" className="sr-only">Oda Kodu</label>
+                                <input
+                                    id="join-room-mobile"
+                                    type="text"
+                                    value={joinRoomCodeInput}
+                                    onChange={e => setJoinRoomCodeInput(e.target.value)}
+                                    placeholder="Oda Kodu Girin"
+                                    className="w-full p-3 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center"
+                                />
+                            </div>
+                            <button
+                                onClick={handleJoinRoom}
+                                disabled={joinRoomLoading || !joinRoomCodeInput.trim()}
+                                className="w-full px-4 py-3 rounded-lg font-semibold transition duration-300 bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed"
+                            >
+                                {joinRoomLoading ? 'Katılıyor...' : 'Odaya Katıl'}
+                            </button>
+                            {user?.roles?.includes('ADMIN') && (
+                                 <button
                                     onClick={createRoom}
-                                    disabled={createRoomLoading || !user?.roles?.includes('ADMIN')}
-                                    className={`w-full px-4 py-2 rounded-lg font-semibold transition duration-300 ${(!user?.roles?.includes('ADMIN')) ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                                    disabled={createRoomLoading}
+                                    className="w-full px-4 py-3 rounded-lg font-semibold transition duration-300 bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-600"
                                 >
                                     {createRoomLoading ? 'Oluşturuluyor...' : 'Yeni Oda Oluştur'}
                                 </button>
+                            )}
+                         </div>
+                    </div>
+                ) : (
+                    // STAGE 2: In-Room Screen (Figma Design)
+                    <>
+                        {/* Header */}
+                        <div className="flex justify-between items-center p-4 bg-gray-800/80 backdrop-blur-sm shadow-lg flex-shrink-0">
+                            <p className="font-semibold">Oda: <span className="font-mono text-yellow-400">{roomCode}</span></p>
+                            <button onClick={() => setIsDetailsModalOpen(true)} className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded-md font-semibold">Detay</button>
+                        </div>
+
+                        {/* Main Content */}
+                        <div className="flex-grow flex flex-col p-4 overflow-hidden">
+                            {/* Team Lists */}
+                            <div className='flex-shrink-0'>
+                                <div className={`p-4 bg-gray-800 rounded-lg mb-4 border-2 ${isTeamATurn ? 'border-blue-400' : 'border-transparent'} transition-all`}>
+                                    <h3 className="font-bold text-blue-400">Takım A: {teamACaptainName} ({teamASelectedCount}/7)</h3>
+                                    <p className="text-gray-300 text-sm break-words">{Object.values(teamASelectedPlayers).map(p => p.name).join(', ') || 'Henüz oyuncu seçilmedi.'}</p>
+                                </div>
+                                <div className={`p-4 bg-gray-800 rounded-lg mb-4 border-2 ${isTeamBTurn ? 'border-red-400' : 'border-transparent'} transition-all`}>
+                                    <h3 className="font-bold text-red-400">Takım B: {teamBCaptainName} ({teamBSelectedCount}/7)</h3>
+                                    <p className="text-gray-300 text-sm break-words">{Object.values(teamBSelectedPlayers).map(p => p.name).join(', ') || 'Henüz oyuncu seçilmedi.'}</p>
+                                </div>
+                                <div className="text-gray-400 text-sm mb-2">
+        {availablePlayersForSelection.length > 0 ? (
+            <>
+                <span className="font-semibold text-gray-300">Seçilebilecek Oyuncular:</span>
+                {' '}
+                {availablePlayersForSelection.map(player => player.name).join(', ')}
+            </>
+        ) : (
+            <span className="text-red-400"></span>
+        )}
+    </div>
+                                 <hr className="border-gray-700 mb-4" />
                             </div>
-                            <div>
-                                <h3 className="text-lg font-medium mb-2">Odaya Katıl</h3>
-                                <div className="flex">
-                                    <input
-                                        type="text"
-                                        value={joinRoomCodeInput}
-                                        onChange={e => setJoinRoomCodeInput(e.target.value)}
-                                        placeholder="Oda Kodu"
-                                        className="flex-grow p-2 bg-gray-700 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    />
-                                    <button
-                                        onClick={handleJoinRoom}
-                                        disabled={joinRoomLoading || !joinRoomCodeInput.trim()}
-                                        className={`w-full px-4 py-2 rounded-lg font-semibold transition duration-300 ${(!joinRoomCodeInput.trim() || joinRoomLoading) ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
-                                    >
-                                        {joinRoomLoading ? 'Katılıyor...' : 'Katıl'}
+
+                            {/* Chat & Player Selection Area */}
+                             <div className="flex-grow overflow-y-auto pr-2 stable-scrollbar" id="mobile-chat-area">
+                                <h2 className="text-xl font-semibold pb-2 mb-2 text-center text-gray-400">Sohbet</h2>
+                                {receivedMessages.slice().map((msg, index) => {
+                                    const isCurrentUserMsg = msg.sender === user?.email;
+                                    const senderDisplayName = isCurrentUserMsg ? "Sen" : msg.sender.split('@')[0];
+                                    const isSystemMessage = msg.sender === "Sistem";
+
+                                    if (isSystemMessage) {
+                                        return (
+                                            <div key={index} className="flex justify-center my-2">
+                                                <div className="text-center text-xs text-yellow-400 bg-gray-700 rounded-full px-3 py-1">
+                                                    {msg.content}
+                                                </div>
+                                            </div>
+                                        )
+                                    }
+                                    return (
+                                        <div key={index} className={`flex items-end mb-3 ${isCurrentUserMsg ? 'justify-end' : 'justify-start'}`}>
+                                            <div className="max-w-[80%]">
+                                                {!isCurrentUserMsg && (
+                                                    <p className={`font-bold text-xs mb-1 text-left ${msg.colorClass ? msg.colorClass.replace('bg-', 'text-') : 'text-gray-400'}`}>
+                                                        {senderDisplayName}
+                                                    </p>
+                                                )}
+                                                <div className={`relative rounded-lg px-3 py-2 break-words ${isCurrentUserMsg ? 'bg-blue-600 text-white' : `${msg.colorClass || 'bg-gray-700'} text-white`}`}>
+                                                    {msg.content}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            {/* Chat Input */}
+                             <div className="mt-4 flex-shrink-0">
+                                <input
+                                    type="text"
+                                    value={inputMessage}
+                                    onChange={e => setInputMessage(e.target.value)}
+                                    onKeyPress={e => { if (e.key === 'Enter') sendMessage(); }}
+                                    placeholder={isConnected && roomCode ? 'Mesajınızı yazın...' : 'Bağlı değil'}
+                                    className="w-full p-3 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    disabled={!isConnected || !roomCode}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Details Modal */}
+                        {isDetailsModalOpen && (
+                             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setIsDetailsModalOpen(false)}>
+                                <div className="bg-gray-800 rounded-lg p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                                    <h3 className="text-xl font-bold mb-4 border-b border-gray-600 pb-2">Odadaki Aktif Kullanıcılar ({usersInRoom.length})</h3>
+                                    <ul className="space-y-2 text-gray-300">
+                                        {usersInRoom.map((userEmail, index) => (
+                                            <li key={index} className="bg-gray-700 p-2 rounded-md">{userEmail.split('@')[0]}</li>
+                                        ))}
+                                    </ul>
+                                    <button onClick={() => setIsDetailsModalOpen(false)} className="w-full mt-6 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition">
+                                        Kapat
                                     </button>
                                 </div>
                             </div>
-                        </>
-                    ) : (
-                        <div>
-                            <p className="text-lg font-semibold">Oda Kodu: <span className="text-yellow-400 font-mono">{roomCode}</span></p>
-                            <button onClick={endConnection} className="w-full mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition">
-                                Odadan Ayrıl
-                            </button>
-                        </div>
-                    )}
-                    <div>
-                        <h3 className="text-lg font-medium mt-4">Odaki Kullanıcılar ({usersInRoom.length})</h3>
-                        <ul className="list-disc list-inside text-gray-300">
-                            {usersInRoom.map((userEmail, index) => (
-                                <li key={index}>{userEmail.split('@')[0]}</li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    {user?.roles?.includes('ADMIN') && (
-                        <div className="space-y-2">
-                            <h3 className="text-lg font-medium mt-4">Kaptan Seçimi</h3>
-                            <div>
-                                <label htmlFor="teamA_captain" className="block text-sm font-medium text-gray-400">Takım A Kaptanı</label>
-                                <select id="teamA_captain" value={teamACaptain} onChange={(e) => setTeamACaptain(e.target.value)} className="w-full p-2 bg-gray-700 rounded-lg mt-1">
-                                    <option value="">Seçiniz...</option>
-                                    {usersInRoom.map((userEmail) => (
-                                        <option key={userEmail} value={userEmail}>{userEmail.split('@')[0]}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label htmlFor="teamB_captain" className="block text-sm font-medium text-gray-400">Takım B Kaptanı</label>
-                                <select id="teamB_captain" value={teamBCaptain} onChange={(e) => setTeamBCaptain(e.target.value)} className="w-full p-2 bg-gray-700 rounded-lg mt-1">
-                                    <option value="">Seçiniz...</option>
-                                    {usersInRoom.map((userEmail) => (
-                                        <option key={userEmail} value={userEmail}>{userEmail.split('@')[0]}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <button onClick={handleSetCaptains} disabled={!teamACaptain || !teamBCaptain} className={`w-full px-4 py-2 rounded-lg font-semibold transition ${(!teamACaptain || !teamBCaptain) ? 'bg-gray-600 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>Kaptanları Ayarla</button>
-                        </div>
-                    )}
-
-                    {user?.roles?.includes('ADMIN') && teamACaptain && teamBCaptain && !selectionInProgress && (
-                        <button onClick={handleStartSelection} className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition">Takım Seçimini Başlat</button>
-                    )}
-                </div>
-
-                {/* Orta Panel: Seçim ve Takımlar */}
-                <div className="md:col-span-2 bg-gray-800 p-4 rounded-lg flex flex-col">
-                    <h2 className="text-xl font-semibold border-b border-gray-600 pb-2">Takım Seçimi</h2>
-                    {selectionInProgress ? (
-                        <>
-                            <p className="text-gray-300 mt-2">{selectionStatusMessage}</p>
-                            <p className="text-gray-300 mt-2">Sıradaki: <span className="font-bold text-green-400">{currentPlayerSelectionTurn ? currentPlayerSelectionTurn.split('@')[0] : 'Bekleniyor...'}</span></p>
-
-                            <div className="grid grid-cols-2 gap-4 mt-4">
-                                <div>
-                                    <h3 className="text-lg font-bold text-blue-400">Takım A ({teamASelectedCount}/7)</h3>
-                                    <ul className="mt-2 space-y-1 text-gray-200">
-                                        {Object.values(teamASelectedPlayers).map(player => <li key={player.id}>{player.name}</li>)}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-red-400">Takım B ({teamBSelectedCount}/7)</h3>
-                                    <ul className="mt-2 space-y-1 text-gray-200">
-                                        {Object.values(teamBSelectedPlayers).map(player => <li key={player.id}>{player.name}</li>)}
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 flex-grow overflow-y-auto">
-                                <h3 className="text-lg font-semibold">Seçilebilecek Oyuncular</h3>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">
-                                    {availablePlayersForSelection.map(player => (
-                                        <button
-                                            key={player.id}
-                                            onClick={() => handleSelectPlayer(player.id)}
-                                            disabled={!canSelectPlayers}
-                                            className={`p-2 rounded-md text-center transition ${canSelectPlayers ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-900 text-gray-500 cursor-not-allowed'}`}
-                                        >
-                                            {player.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        roomCode ? (
-                            <div>
-                                <p className="text-gray-300">Takım A Kaptanı: <span className="font-bold text-blue-400">{teamACaptain ? teamACaptain.split('@')[0] : 'Yok'}</span></p>
-                                <p className="text-gray-300">Takım B Kaptanı: <span className="font-bold text-red-400">{teamBCaptain ? teamBCaptain.split('@')[0] : 'Yok'}</span></p>
-                                <p className="mt-4 text-gray-400">Takım seçimi henüz başlamadı.</p>
-                            </div>
-                        ) : (
-                            <p className="mt-4 text-gray-400">Takım bilgilerini görmek için bir odaya katılın veya oluşturun.</p>
-                        )
-                    )}
-                </div>
-
-                {/* Sağ Panel: Chat */}
-                <div className="md:col-span-1 bg-gray-800 p-4 rounded-lg flex flex-col h-[80vh]">
-                    <h2 className="text-xl font-semibold border-b border-gray-600 pb-2 mb-4">Sohbet</h2>
-                    <div className="flex-grow overflow-y-auto pr-2 stable-scrollbar">
-                        {receivedMessages.slice().map((msg, index) => {
-                            const isCurrentUser = msg.sender === user?.email;
-                            const senderDisplayName = isCurrentUser ? "Sen" : msg.sender.split('@')[0];
-                            const isSystemMessage = msg.sender === "Sistem";
-
-                            if (isSystemMessage) {
-                                return (
-                                    <div key={index} className="flex justify-center my-2">
-                                        <div className="text-center text-xs text-yellow-400 bg-gray-800 rounded-full px-3 py-1">
-                                            {msg.content}
-                                        </div>
-                                    </div>
-                                )
-                            }
-
-                            return (
-                                <div key={index} className={`flex items-end mb-3 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                                    {/* For OTHERS: Avatar appears first (left) */}
-                                    {!isCurrentUser && (
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-2 flex-shrink-0 ${msg.colorClass}`}>
-                                            <span className="text-white font-bold text-sm">{msg.sender.charAt(0).toUpperCase()}</span>
-                                        </div>
-                                    )}
-
-                                    {/* Message Bubble & Name container */}
-                                    <div>
-                                        {!isCurrentUser && (
-                                            <p className={`font-bold text-xs mb-1 text-left ${msg.colorClass ? msg.colorClass.replace('bg-', 'text-') : 'text-gray-400'}`}>
-                                                {senderDisplayName}
-                                            </p>
-                                        )}
-                                        <div className={`relative rounded-lg px-4 py-2 max-w-xs sm:max-w-md break-words ${isCurrentUser ? 'bg-blue-600 text-white' : `${msg.colorClass || 'bg-gray-700'} text-white`}`}>
-                                            {msg.content}
-                                        </div>
-                                    </div>
-
-                                    {/* For SELF: Avatar appears last (right) */}
-                                    {isCurrentUser && user?.email && (
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ml-2 flex-shrink-0 bg-blue-600`}>
-                                            <span className="text-white font-bold text-sm">{user.email.charAt(0).toUpperCase()}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                        <div ref={messagesEndRef} />
-                    </div>
-                    <div className="mt-4 flex">
-                        <input
-                            type="text"
-                            value={inputMessage}
-                            onChange={e => setInputMessage(e.target.value)}
-                            onKeyPress={e => {
-                                if (e.key === 'Enter' && isConnected && roomCode && inputMessage.trim()) {
-                                    sendMessage();
-                                }
-                            }}
-                            placeholder={isConnected && roomCode ? 'Mesajınızı yazın...' : 'Bağlı değil'}
-                            className="flex-grow p-2 bg-gray-700 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            disabled={!isConnected || !roomCode}
-                        />
-                        <button
-                            onClick={sendMessage}
-                            disabled={!isConnected || !roomCode || !inputMessage.trim()}
-                            className={`px-4 py-2 rounded-r-lg font-semibold transition duration-300 ${(!isConnected || !roomCode || !inputMessage.trim()) ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}
-                        >
-                            Gönder
-                        </button>
-                    </div>
-                </div>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     );
