@@ -15,6 +15,8 @@ import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import AdminPage from "./components/Admin/AdminPage"; // Import AdminPage
 import { Link } from "react-router-dom";
 import WebSocketTest from './components/WebSocketTest';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Basic Navbar for navigation and auth status
 const Navbar = () => {
@@ -119,6 +121,19 @@ const AppContent = () => {
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </div>
+            <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="dark" // Tailwind ile uyumlu olması için
+                style={{ zIndex: 9999, position: 'fixed' }}
+            />
         </>
     );
 };
