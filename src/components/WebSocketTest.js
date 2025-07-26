@@ -71,6 +71,10 @@ function WebSocketTest() {
   const [allPlayersForSelection, setAllPlayersForSelection] = useState([]);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
+  // *** YENİ EKLENEN STATE ***
+  // Son seçilen oyuncunun ID'sini tutmak için state
+  const [lastSelectedPlayerId, setLastSelectedPlayerId] = useState(null);
+
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -333,6 +337,35 @@ function WebSocketTest() {
         (message) => {
           const roomStatus = JSON.parse(message.body);
           console.log("Received room status (from topic):", roomStatus);
+          
+          // *** GÜNCELLENEN BÖLÜM BAŞLANGICI ***
+          const newTeamA = roomStatus.teamASelectedPlayers || {};
+          const newTeamB = roomStatus.teamBSelectedPlayers || {};
+
+          setTeamASelectedPlayers((prevTeamA) => {
+            const prevTeamAIds = Object.keys(prevTeamA);
+            const newTeamAIds = Object.keys(newTeamA);
+            const addedPlayerId = newTeamAIds.find(
+              (id) => !prevTeamAIds.includes(id)
+            );
+            if (addedPlayerId) {
+              setLastSelectedPlayerId(addedPlayerId);
+            }
+            return newTeamA;
+          });
+
+          setTeamBSelectedPlayers((prevTeamB) => {
+            const prevTeamBIds = Object.keys(prevTeamB);
+            const newTeamBIds = Object.keys(newTeamB);
+            const addedPlayerId = newTeamBIds.find(
+              (id) => !prevTeamBIds.includes(id)
+            );
+            if (addedPlayerId) {
+              setLastSelectedPlayerId(addedPlayerId);
+            }
+            return newTeamB;
+          });
+          
           setUsersInRoom(roomStatus.usersInRoom || []);
           setTeamACaptain(roomStatus.teamACaptainEmail || "");
           setTeamBCaptain(roomStatus.teamBCaptainEmail || "");
@@ -340,12 +373,11 @@ function WebSocketTest() {
           setAvailablePlayersForSelection(
             roomStatus.availablePlayersForSelection || []
           );
-          setTeamASelectedPlayers(roomStatus.teamASelectedPlayers || {});
-          setTeamBSelectedPlayers(roomStatus.teamBSelectedPlayers || {});
           setCurrentPlayerSelectionTurn(
             roomStatus.currentPlayerSelectionTurnEmail || ""
           );
           setSelectionStatusMessage(roomStatus.selectionStatusMessage || "");
+          // *** GÜNCELLENEN BÖLÜM SONU ***
         }
       );
 
@@ -355,7 +387,35 @@ function WebSocketTest() {
         (message) => {
           const roomStatus = JSON.parse(message.body);
           console.log("Received room status (from user queue):", roomStatus);
-          // Aynı state'leri güncellediği için yukarıdakiyle aynı mantık
+
+          // *** GÜNCELLENEN BÖLÜM BAŞLANGICI ***
+          const newTeamA = roomStatus.teamASelectedPlayers || {};
+          const newTeamB = roomStatus.teamBSelectedPlayers || {};
+
+          setTeamASelectedPlayers((prevTeamA) => {
+            const prevTeamAIds = Object.keys(prevTeamA);
+            const newTeamAIds = Object.keys(newTeamA);
+            const addedPlayerId = newTeamAIds.find(
+              (id) => !prevTeamAIds.includes(id)
+            );
+            if (addedPlayerId) {
+              setLastSelectedPlayerId(addedPlayerId);
+            }
+            return newTeamA;
+          });
+
+          setTeamBSelectedPlayers((prevTeamB) => {
+            const prevTeamBIds = Object.keys(prevTeamB);
+            const newTeamBIds = Object.keys(newTeamB);
+            const addedPlayerId = newTeamBIds.find(
+              (id) => !prevTeamBIds.includes(id)
+            );
+            if (addedPlayerId) {
+              setLastSelectedPlayerId(addedPlayerId);
+            }
+            return newTeamB;
+          });
+
           setUsersInRoom(roomStatus.usersInRoom || []);
           setTeamACaptain(roomStatus.teamACaptainEmail || "");
           setTeamBCaptain(roomStatus.teamBCaptainEmail || "");
@@ -363,12 +423,11 @@ function WebSocketTest() {
           setAvailablePlayersForSelection(
             roomStatus.availablePlayersForSelection || []
           );
-          setTeamASelectedPlayers(roomStatus.teamASelectedPlayers || {});
-          setTeamBSelectedPlayers(roomStatus.teamBSelectedPlayers || {});
           setCurrentPlayerSelectionTurn(
             roomStatus.currentPlayerSelectionTurnEmail || ""
           );
           setSelectionStatusMessage(roomStatus.selectionStatusMessage || "");
+           // *** GÜNCELLENEN BÖLÜM SONU ***
         }
       );
 
@@ -473,7 +532,7 @@ function WebSocketTest() {
   };
 
   const handleJoinRoom = () => {
-    isDraftingFinished == false; 
+    // isDraftingFinished == false;
     if (!stompClient || !stompClient.connected) {
       toast.warn("Odaya katılmak için önce WebSocket bağlantısını başlatın.");
       return;
@@ -607,23 +666,9 @@ function WebSocketTest() {
     });
   };
 
-  if (authLoading) {
-    return (
-      <div className="text-center text-white p-10">
-        Kullanıcı bilgileri yükleniyor...
-      </div>
-    );
-  }
-  if (!user || !user.email || !token) {
-    return (
-      <div className="text-center text-red-400 p-10">
-        Giriş yapmadan bu sayfaya erişemezsiniz.
-      </div>
-    );
-  }
   const isCurrentPlayerCaptain =
-    user.email === teamACaptain || user.email === teamBCaptain;
-  const isCurrentPlayerTurn = user.email === currentPlayerSelectionTurn;
+    user?.email === teamACaptain || user?.email === teamBCaptain;
+  const isCurrentPlayerTurn = user?.email === currentPlayerSelectionTurn;
   const canSelectPlayers =
     isCurrentPlayerCaptain && isCurrentPlayerTurn && selectionInProgress;
   const teamASelectedCount = Object.keys(teamASelectedPlayers).length;
@@ -651,13 +696,15 @@ function WebSocketTest() {
     });
   };
 
-  
+  // useEffect'i koşulsuz çağır, koşulu içinde denetle
   useEffect(() => {
     if (isDraftingFinished) {
       fireConfetti();
+      setLastSelectedPlayerId(null);
       toast.success("Takım seçimi tamamlandı! 🎉");
     }
-  }, [isDraftingFinished]);
+  }, [isDraftingFinished]); // isDraftingFinished değiştiğinde çalıştır
+
   // Vurgulama mantığı güncellendi: Seçim bitmişse vurgulama yapılmaz
   const isTeamATurn =
     selectionInProgress &&
@@ -668,6 +715,21 @@ function WebSocketTest() {
     !isDraftingFinished &&
     currentPlayerSelectionTurn === teamBCaptain;
   // *** YENİ DEĞİŞİKLİK SONU ***
+
+  if (authLoading) {
+    return (
+      <div className="text-center text-white p-10">
+        Kullanıcı bilgileri yükleniyor...
+      </div>
+    );
+  }
+  if (!user || !user.email || !token) {
+    return (
+      <div className="text-center text-red-400 p-10">
+        Giriş yapmadan bu sayfaya erişemezsiniz.
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
@@ -935,21 +997,43 @@ function WebSocketTest() {
                     <h3 className="text-lg font-bold text-blue-400">
                       Takım A ({teamASelectedCount}/7)
                     </h3>
+                    {/* *** GÜNCELLENEN BÖLÜM BAŞLANGICI *** */}
                     <ul className="mt-2 space-y-1 text-gray-200">
                       {Object.values(teamASelectedPlayers).map((player) => (
-                        <li key={player.id}>{player.name}</li>
+                        <li
+                          key={player.id}
+                          className={`transition-all duration-500 rounded px-2 py-1 ${
+                            player.id.toString() === lastSelectedPlayerId
+                              ? "bg-green-600"
+                              : "bg-transparent"
+                          }`}
+                        >
+                          {player.name}
+                        </li>
                       ))}
                     </ul>
+                    {/* *** GÜNCELLENEN BÖLÜM SONU *** */}
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-red-400">
                       Takım B ({teamBSelectedCount}/7)
                     </h3>
+                    {/* *** GÜNCELLENEN BÖLÜM BAŞLANGICI *** */}
                     <ul className="mt-2 space-y-1 text-gray-200">
                       {Object.values(teamBSelectedPlayers).map((player) => (
-                        <li key={player.id}>{player.name}</li>
+                        <li
+                          key={player.id}
+                          className={`transition-all duration-500 rounded px-2 py-1 ${
+                            player.id.toString() === lastSelectedPlayerId
+                              ? "bg-green-600"
+                              : "bg-transparent"
+                          }`}
+                        >
+                          {player.name}
+                        </li>
                       ))}
                     </ul>
+                    {/* *** GÜNCELLENEN BÖLÜM SONU *** */}
                   </div>
                 </div>
 
@@ -1163,11 +1247,33 @@ function WebSocketTest() {
                   <h3 className="font-bold text-blue-400">
                     Takım A: {teamACaptainName} ({teamASelectedCount}/7)
                   </h3>
+                  {/* *** GÜNCELLENEN BÖLÜM BAŞLANGICI *** */}
                   <p className="text-gray-300 text-sm break-words">
-                    {Object.values(teamASelectedPlayers)
-                      .map((p) => p.name)
-                      .join(", ") || "Henüz oyuncu seçilmedi."}
+                    {Object.values(teamASelectedPlayers).length > 0
+                      ? Object.values(teamASelectedPlayers).map(
+                          (player, index) => (
+                            <React.Fragment key={player.id}>
+                              <span
+                                className={`transition-all duration-300 rounded px-1 ${
+                                  player.id.toString() ===
+                                  lastSelectedPlayerId
+                                    ? "bg-green-600"
+                                    : ""
+                                }`}
+                              >
+                                {player.name}
+                              </span>
+                              {index <
+                              Object.values(teamASelectedPlayers).length -
+                                1
+                                ? ", "
+                                : ""}
+                            </React.Fragment>
+                          )
+                        )
+                      : "Henüz oyuncu seçilmedi."}
                   </p>
+                  {/* *** GÜNCELLENEN BÖLÜM SONU *** */}
                 </div>
                 <div
                   className={`p-4 bg-gray-800 rounded-lg mb-4 border-2 ${
@@ -1177,11 +1283,33 @@ function WebSocketTest() {
                   <h3 className="font-bold text-red-400">
                     Takım B: {teamBCaptainName} ({teamBSelectedCount}/7)
                   </h3>
+                   {/* *** GÜNCELLENEN BÖLÜM BAŞLANGICI *** */}
                   <p className="text-gray-300 text-sm break-words">
-                    {Object.values(teamBSelectedPlayers)
-                      .map((p) => p.name)
-                      .join(", ") || "Henüz oyuncu seçilmedi."}
+                    {Object.values(teamBSelectedPlayers).length > 0
+                      ? Object.values(teamBSelectedPlayers).map(
+                          (player, index) => (
+                            <React.Fragment key={player.id}>
+                              <span
+                                className={`transition-all duration-300 rounded px-1 ${
+                                  player.id.toString() ===
+                                  lastSelectedPlayerId
+                                    ? "bg-green-600"
+                                    : ""
+                                }`}
+                              >
+                                {player.name}
+                              </span>
+                              {index <
+                              Object.values(teamBSelectedPlayers).length -
+                                1
+                                ? ", "
+                                : ""}
+                            </React.Fragment>
+                          )
+                        )
+                      : "Henüz oyuncu seçilmedi."}
                   </p>
+                  {/* *** GÜNCELLENEN BÖLÜM SONU *** */}
                 </div>
                 <div className="text-gray-400 text-sm mb-2">
                   {availablePlayersForSelection.length > 0 ? (
