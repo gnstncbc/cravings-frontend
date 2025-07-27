@@ -15,6 +15,7 @@ import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import AdminPage from "./components/Admin/AdminPage"; // Import AdminPage
 import { Link } from "react-router-dom";
 import WebSocketTest from './components/WebSocketTest';
+import PlayerDetailPage from './components/Player/PlayerDetailPage.js';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -115,7 +116,7 @@ const AppContent = () => {
                     <Route path="/craving-tracker" element={<CravingTracker />} />
                     <Route path="/requests" element={<Requests />} />
                     <Route path="/websocket-test" element={<WebSocketTest />} />
-                    
+                    <Route path="/players/:playerId" element={<PlayerDetailPage />} />
                     {/* Fallback route for unmatched paths */}
 
                     <Route path="*" element={<Navigate to="/" replace />} />
