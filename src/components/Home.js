@@ -23,11 +23,11 @@ const Home = () => {
         </Link>
 
         {/* Sigara İkonu - Craving Tracker'a Yönlendirme */}
-        <Link to="/craving-tracker" className="flex flex-col items-center p-6 bg-gray-800 rounded-2xl shadow-xl hover:bg-gray-700 transition-colors">
+        {/* <Link to="/craving-tracker" className="flex flex-col items-center p-6 bg-gray-800 rounded-2xl shadow-xl hover:bg-gray-700 transition-colors"> */}
           {/* <FontAwesomeIcon icon={faSmoking} size="4x" className="mb-4 text-red-400" /> */}
-          <span className="text-6xl mb-4" role="img" aria-label="sigara">🚬</span>
-          <span className="text-xl font-semibold">Sigara İsteği</span>
-        </Link>
+          {/* <span className="text-6xl mb-4" role="img" aria-label="sigara">🚬</span> */}
+          {/* <span className="text-xl font-semibold">Sigara İsteği</span> */}
+        {/* </Link> */}
 
       </div>
        {/* İstekler Sayfasına Gitmek İçin Buton (Opsiyonel, ana sayfada da kalabilir) */}
