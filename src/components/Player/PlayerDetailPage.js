@@ -128,7 +128,7 @@ const PlayerDetailPage = () => {
                                 {expandedMatchId === match.matchId && (
                                     <div className="mt-4 pt-4 border-t border-gray-700">
                                         <div className="flex justify-end mb-2">
-                                            <Link to={`/?matchId=${match.matchId}`} className="text-sm text-yellow-400 hover:text-yellow-300">
+                                            <Link to={`/carpet?matchId=${match.matchId}`} className="text-sm text-yellow-400 hover:text-yellow-300">
                                                 Bu maçı sahada gör &rarr;
                                             </Link>
                                         </div>
