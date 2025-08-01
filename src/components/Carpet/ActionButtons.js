@@ -15,7 +15,9 @@ function ActionButtons({
     isSwitchingTeams,
     hasPlayersOnPitch,
     selectedMatchId,
-    canQuickGenerate
+    canQuickGenerate,
+    isChemistryVisible, // YENİ PROP
+    onToggleChemistry, // YENİ PROP
 }) {
     return (
         <div className="space-y-2">
@@ -48,7 +50,13 @@ function ActionButtons({
             >
                 {isSharing ? 'Paylaşılıyor...' : 'Kadroyu Paylaş'}
             </button>
-            
+            <button
+                onClick={onToggleChemistry}
+                disabled={!hasPlayersOnPitch}
+                className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {isChemistryVisible ? 'Kimyayı Gizle' : 'Kimyayı Göster'}
+            </button>
             <button
                 onClick={onAlignPlayers}
                 disabled={!hasPlayersOnPitch || isAligningPlayers}
