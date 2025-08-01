@@ -1,8 +1,9 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import PlayerMarker from './PlayerMarker';
+import ChemistryLines from './ChemistryLines'; // YENİ IMPORT
 
-function PitchDisplay({ pitchId, teamId, playersOnThisPitch, pitchRef }) {
+function PitchDisplay({ pitchId, teamId, playersOnThisPitch, pitchRef, pairStats, isChemistryVisible }) { // pairStats prop'u eklendi
     const { setNodeRef, isOver } = useDroppable({ id: pitchId });
     const teamBorderColor = teamId === 'A' ? 'border-red-500' : 'border-white-500';
     const teamBgColor = teamId === 'A' ? 'bg-red-900' : 'bg-white/5';
@@ -18,6 +19,15 @@ function PitchDisplay({ pitchId, teamId, playersOnThisPitch, pitchRef }) {
             <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3/5 h-1/4 border-l border-r border-t border-white border-opacity-30 z-0"></div>
             <div className="absolute top-0 left-1/2 w-1/4 h-4 border-b border-l border-r border-white border-opacity-30 transform -translate-x-1/2 z-0"></div>
             <div className="absolute bottom-0 left-1/2 w-1/4 h-4 border-t border-l border-r border-white border-opacity-30 transform -translate-x-1/2 z-0"></div>
+
+            {/* YENİ: ChemistryLines komponenti eklendi */}
+            {isChemistryVisible && (
+                <ChemistryLines
+                    playersOnPitch={playersOnThisPitch}
+                    pairStats={pairStats}
+                    pitchRef={pitchRef}
+                />
+            )}
 
             {Object.entries(playersOnThisPitch).map(([playerId, playerData]) => (
                 <PlayerMarker

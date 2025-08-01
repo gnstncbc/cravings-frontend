@@ -51,16 +51,78 @@ const Carpet = () => {
     playerPositions: {},
   });
 
-  // YENİ EKLENEN KISIM: Kazanma tahmini için state'ler
   const [prediction, setPrediction] = useState(null);
   const [isCalculatingPrediction, setIsCalculatingPrediction] = useState(false);
   const debounceTimeoutRef = useRef(null);
-  // YENİ EKLENEN KISIM SONU
+
+  // YENİ: Takım kimyası için state'ler
+  const [teamAChemistry, setTeamAChemistry] = useState({
+    value: 0,
+    isLoading: false,
+  });
+  const [teamBChemistry, setTeamBChemistry] = useState({
+    value: 0,
+    isLoading: false,
+  });
+  const [pairStatsA, setPairStatsA] = useState([]);
+  const [pairStatsB, setPairStatsB] = useState([]);
+  const chemistryTimeoutRef = useRef(null);
+																	  
+
+									 
+														 
+										 
+										 
+	  
+  // YENİ STATE'LER SONU
+  const [isChemistryVisible, setIsChemistryVisible] = useState(true);
 
   const pitchRefA = useRef(null);
   const pitchRefB = useRef(null);
   const pitchesContainerRef = useRef(null);
+  
+  const handleToggleChemistry = () => setIsChemistryVisible(prev => !prev);
+  // ... (fetchPlayers, handleTeamGenStateChange, fetchMatches, clearPitch, loadMatchLineup, useEffects for loading...)
+															
+									   
+					 
+												 
+																							  
+								
+						   
 
+								   
+														
+																			  
+
+																	  
+															
+
+							 
+																  
+									   
+
+						   
+														 
+				
+																				  
+		 
+		
+
+													 
+
+								   
+
+					
+											   
+		
+				
+
+										   
+	
+						 
+
+																																																   
   const fetchPlayers = useCallback(async () => {
     setIsLoadingPlayers(true);
     try {
@@ -77,7 +139,13 @@ const Carpet = () => {
 
   const handleTeamGenStateChange = useCallback((newState) => {
     setTeamGenState(newState);
-  }, []); // Empty dependency array means this function is created only once
+  }, []);
+			
+																		  
+																
+			
+																						  
+										   
 
   const fetchMatches = useCallback(async () => {
     setIsLoadingMatches(true);
@@ -101,6 +169,11 @@ const Carpet = () => {
     setTeamAScore("");
     setTeamBScore("");
     setPrediction(null);
+    // YENİ: Kimya state'lerini de temizle
+    setTeamAChemistry({ value: 0, isLoading: false });
+    setTeamBChemistry({ value: 0, isLoading: false });
+    setPairStatsA([]);
+    setPairStatsB([]);
     toast.info("Saha temizlendi.");
     setSearchParams({}, { replace: true });
   }, [setSearchParams]);
@@ -111,10 +184,8 @@ const Carpet = () => {
         setShareableLink(null);
         setTeamAScore("");
         setTeamBScore("");
-        // clearPitch will be called by select onChange if matchId is empty
         return;
       }
-      // toast.info("Kadro ve skor bilgileri yükleniyor...");
       let matchDetails;
       try {
         const response = await apiClient.get(`/matches/${matchId}`);
@@ -151,7 +222,6 @@ const Carpet = () => {
         setTeamBScore(
           matchDetails.teamBScore != null ? String(matchDetails.teamBScore) : ""
         );
-        // toast.success(`"${matchDetails.matchName || 'İsimsiz Kadro'}" yüklendi.`);
         setShareableLink(
           `${window.location.origin}${window.location.pathname}?matchId=${matchId}`
         );
@@ -164,80 +234,211 @@ const Carpet = () => {
           matchDetails
         );
         toast.error("Seçilen kadro/skor yüklenirken bir hata oluştu.");
-        // Clear relevant state on error
-        clearPitch(); // This will also clear selectedMatchId and searchParams
+        clearPitch();
       }
     },
     [setSearchParams, clearPitch]
-  ); // Added clearPitch to dependencies
+  );
 
   useEffect(() => {
     const matchIdFromUrl = searchParams.get("matchId");
     fetchPlayers();
     fetchMatches().then(() => {
-      // Initial load based on URL; subsequent updates handled by the next useEffect
       if (matchIdFromUrl) {
-        // loadMatchLineup will be called by the next useEffect if matchIdFromUrl is valid
-        // and matches are loaded. Setting selectedMatchId here is okay.
         setSelectedMatchId(matchIdFromUrl);
-        // Defer loading to the effect that depends on `matches` to ensure `matches` is populated.
       }
     });
-  }, [fetchPlayers, fetchMatches, searchParams]); // Removed loadMatchLineup as it's better handled below
+  }, [fetchPlayers, fetchMatches, searchParams]);
 
   useEffect(() => {
     const matchIdFromUrl = searchParams.get("matchId");
     if (matchIdFromUrl && !isLoadingMatches && matches.length > 0) {
       const matchExists = matches.some((m) => m.id === matchIdFromUrl);
       if (matchExists) {
-        // If the URL match ID is valid and different from current, or if lineup isn't loaded yet for it.
         if (
           selectedMatchId !== matchIdFromUrl ||
           (Object.keys(playersOnPitchA).length === 0 &&
             Object.keys(playersOnPitchB).length === 0 &&
             !shareableLink)
         ) {
-          loadMatchLineup(matchIdFromUrl); // This will also set selectedMatchId via its own logic
+          loadMatchLineup(matchIdFromUrl);
         }
         if (!shareableLink) {
-          // Ensure shareable link is set if match is loaded
           setShareableLink(
             `${window.location.origin}${window.location.pathname}?matchId=${matchIdFromUrl}`
           );
         }
       } else {
-        // Match ID from URL doesn't exist in fetched matches, so clear up.
         toast.warn(
           "URL'deki maç ID'si geçersiz veya bulunamadı. Saha temizleniyor."
         );
         clearPitch();
       }
-    } else if (!matchIdFromUrl && selectedMatchId) {
-      // If URL has no matchId but something is selected, it means user cleared selection or navigated away
-      // This case is mostly handled by clearPitch being called from MatchControls.
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matches, isLoadingMatches, searchParams, loadMatchLineup, clearPitch]);
 
-  const activePlayerBaseData = activeId
-    ? allPlayers.find((p) => String(p.id) === String(activeId))
-    : null;
-  const playersOnPitchIds = useRef(new Set()).current; // More stable ref for the set
-  playersOnPitchIds.clear();
-  Object.keys(playersOnPitchA).forEach((id) => playersOnPitchIds.add(id));
-  Object.keys(playersOnPitchB).forEach((id) => playersOnPitchIds.add(id));
-  const availablePlayers = allPlayers.filter(
-    (p) => !playersOnPitchIds.has(String(p.id))
-  );
+  // YENİ: Takım kimyasını hesaplayan useEffect
+  useEffect(() => {
+    const calculateChemistry = async (
+      playerIds,
+      setChemistry,
+      setPairStats
+    ) => {
+      if (playerIds.length < 2) {
+        setChemistry({ value: 0, isLoading: false });
+        setPairStats([]);
+        return;
+				 
+									
+      }
+		  
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor)
-  );
+      setChemistry((prev) => ({ ...prev, isLoading: true }));
+      try {
+        const response = await apiClient.post("/players/chemistry", {
+          playerIds,
+        });
+        const data = response.data;
+        setChemistry({ value: data.teamChemistry, isLoading: false });
+        setPairStats(data.playerPairStats || []);
+      } catch (error) {
+        console.error("Takım kimyası hesaplanırken hata:", error);
+        // toast.error("Takım kimyası hesaplanamadı.");
+        setChemistry({ value: 0, isLoading: false });
+        setPairStats([]);
+      }
+    };
+
+    // Değişiklikleri biriktirip tek bir API çağrısı yapmak için debounce
+    clearTimeout(chemistryTimeoutRef.current);
+    chemistryTimeoutRef.current = setTimeout(() => {
+      const teamAPlayerIds = Object.keys(playersOnPitchA).map(Number);
+      const teamBPlayerIds = Object.keys(playersOnPitchB).map(Number);
+				   
+														
+														
+						
+				 
+									
+	   
+		  
+
+      calculateChemistry(teamAPlayerIds, setTeamAChemistry, setPairStatsA);
+      calculateChemistry(teamBPlayerIds, setTeamBChemistry, setPairStatsB);
+    }, 750); // 750ms bekle
+							 
+							 
+						
+						
+						  
+														
+														
+						
+						
+									 
+											 
+						 
+
+    return () => clearTimeout(chemistryTimeoutRef.current);
+  }, [playersOnPitchA, playersOnPitchB]);
+  // YENİ useEffect SONU
+								   
+							  
+							  
+				   
+		  
+						  
+			  
+																		
+										 
+								 
+									   
+															
+											
+													
+												 
+												   
+												   
+					   
+				   
+				 
+			 
+								 
+									   
+															
+											
+													
+												 
+												   
+												   
+					   
+				   
+				 
+			 
+										  
+										  
+						  
+																					 
+			  
+						  
+																					 
+			  
+							 
+																						
+			  
+															
+						  
+						  
+										 
+													 
+						
+						   
+			  
+																			  
+						 
+		  
+		
+								   
+	 
+
+  // ... (handleDragStart, handleDragEnd, handleAddPlayer, handleDeletePlayer, handleSaveMatch, handleSaveOrUpdateScore, handleDeleteMatch, copyToClipboard, handleShareBothPitches, alignClosePlayers, switchTeams, handleTeamGeneratorClose, handleTeamGeneratorTeams, fetchPrediction, useEffect for prediction... mevcut fonksiyonlar burada) ...
+														 
+					 
+								 
+							  
+											   
+		  
+		 
+												  
 
   function handleDragStart(event) {
     setActiveId(String(event.active.id));
+																	  
+																		  
+						   
+				
+													
+															
+															  
+								 
+			   
+											   
+			 
+								 
+								
+																								  
+				 
   }
+				 
+					   
+																				   
+			  
+						 
+		  
+	   
+															 
+																			  
 
   function handleDragEnd(event) {
     const { active, over, delta } = event;
@@ -248,6 +449,8 @@ const Carpet = () => {
     const draggedId = String(active.id);
     setActiveId(null);
     const overId = over.id;
+				   
+		  
 
     let draggedPlayerData = allPlayers.find((p) => String(p.id) === draggedId);
     if (!draggedPlayerData) {
@@ -297,62 +500,90 @@ const Carpet = () => {
       removeFromPitch(sourcePitch, draggedId);
       toast.info(`${draggedPlayerData.name} çıkarıldı.`);
     } else if (sourcePitch && targetPitch) {
-      // Takım değiştirme ve takım içi hareket senaryolarını ayırıyoruz.
-
-      // --- SENARYO 1: TAKIM DEĞİŞTİRME ---
       if (sourcePitch !== targetPitch) {
-        // Bu senaryo için en doğru yöntem, bırakılan yerin mutlak pozisyonunu kullanmaktır.
-        const { rect: overRect } = over; // Hedef sahanın bilgileri
-        const activeTranslatedRect = active.rect.current.translated; // Sürüklenen öğenin son pozisyonu
+        const { rect: overRect } = over;
+        const activeTranslatedRect = active.rect.current.translated;
 
-        // DEFANSİF KONTROLLER: Gerekli pozisyon verileri var mı?
         if (!overRect || !activeTranslatedRect) {
           console.error(
             "Takım değiştirirken pozisyon hesaplanamadı: 'over' veya 'active' nesneleri eksik.",
             { over, active }
           );
           toast.error("Oyuncu pozisyonu hesaplanırken bir hata oluştu.");
-          return; // Hata durumunda işlemi durdur.
+          return;
         }
 
-        // Oyuncu merkezinin, hedef sahanın sol üst köşesine göre PİKSEL pozisyonunu hesapla
         const draggedItemCenterX =
           activeTranslatedRect.left + activeTranslatedRect.width / 2;
         const draggedItemCenterY =
           activeTranslatedRect.top + activeTranslatedRect.height / 2;
         const finalPixelX_relative = draggedItemCenterX - overRect.left;
         const finalPixelY_relative = draggedItemCenterY - overRect.top;
+										  
+						
+							 
 
-        // Hesaplanan piksel pozisyonunu YÜZDE'ye çevir
         const dropXPercent = (finalPixelX_relative / overRect.width) * 100;
         const dropYPercent = (finalPixelY_relative / overRect.height) * 100;
+													  
+													  
+					   
+																		
+							
+																		
+			   
+						  
+																		
+						
+			  
+													   
+				   
+		  
+			  
+							  
+											 
+										 
+		   
+	   
 
         const newPlayerData = {
           name: draggedPlayerData.name,
-          // DEFANSİF KONTROL: Değerlerin 0-100 aralığında kaldığından emin ol.
           xPercent: Math.max(0, Math.min(100, dropXPercent)),
           yPercent: Math.max(0, Math.min(100, dropYPercent)),
         };
+						 
+																			  
+												 
 
-        // Oyuncuyu eski takımdan silip yeni takıma, doğru pozisyonla ekle
         removeFromPitch(sourcePitch, draggedId);
         addToPitch(targetPitch, draggedId, newPlayerData);
         toast.info(`${draggedPlayerData.name} Takım ${targetPitch}'e geçti.`);
-
-        // --- SENARYO 2: AYNI TAKIM İÇİNDE POZİSYON DEĞİŞTİRME ---
       } else {
-        // Bu senaryoda, akıcı hissi korumak için orijinal 'delta' tabanlı mantığı kullanıyoruz.
         const currentPositionData =
           playersOnPitchA[draggedId] || playersOnPitchB[draggedId];
+													
+						
+			
+												  
+																		   
 
-        // DEFANSİF KONTROL: Oyuncu verisi var mı?
         if (!currentPositionData) return;
+												 
+																
+											  
+										   
+											
+																		
 
-        // Bu durumda sourcePitch ve targetPitch aynı olduğu için herhangi birini kullanabiliriz.
         const pitchRef = sourcePitch === "A" ? pitchRefA : pitchRefB;
         const pitchRect = pitchRef.current?.getBoundingClientRect();
+																										  
+								  
+				 
+																				
+					  
+			 
 
-        // DEFANSİF KONTROL: Saha boyutları alınabildi mi?
         if (!pitchRect || pitchRect.width <= 0) {
           console.warn(
             "Aynı takım içinde sürüklerken saha boyutları alınamadı."
@@ -369,14 +600,17 @@ const Carpet = () => {
 
         const xPercent = (finalPixelX / pitchRect.width) * 100;
         const yPercent = (finalPixelY / pitchRect.height) * 100;
+																  
+																  
+			  
 
         const updatedPlayerData = {
           name: currentPositionData.name,
           xPercent: Math.max(0, Math.min(100, xPercent)),
           yPercent: Math.max(0, Math.min(100, yPercent)),
         };
+																		
 
-        // Oyuncunun pozisyonunu kendi takımı içinde güncelle
         addToPitch(sourcePitch, draggedId, updatedPlayerData);
       }
     } else if (!sourcePitch && targetPitch) {
@@ -412,8 +646,52 @@ const Carpet = () => {
         xPercent: Math.max(0, Math.min(100, dropXPercent)),
         yPercent: Math.max(0, Math.min(100, dropYPercent)),
       };
+
+																	
+														
+																
+							  
+																  
+						 
+																			
+
+													  
+								
+													   
+							  
+			
+			   
+																		 
+									  
+			   
+														
+
+													  
+																	
+											
+						
+																	 
+				  
+								
+											  
+						  
+																   
+					
+					   
+			 
+						   
+						  
+																	 
+				   
+			  
+		   
+		 
+
+														  
+		
       addToPitch(targetPitch, draggedId, newPlayerData);
-      // toast.success(`${draggedPlayerData.name} Takım ${targetPitch}'e eklendi.`);
+									 
+					   
     }
   }
 
@@ -479,6 +757,7 @@ const Carpet = () => {
   const handleSaveMatch = async () => {
     setIsSavingMatch(true);
     const defaultMatchName = `Kadro ${new Date().toLocaleDateString("tr-TR")}`;
+																	   
     const payload = {
       matchName: defaultMatchName,
       location: "Bilinmiyor",
@@ -487,6 +766,42 @@ const Carpet = () => {
     };
     Object.entries(playersOnPitchA).forEach(([pId, data]) => {
       payload.lineupA[pId] = {
+															  
+															  
+			  
+
+																  
+		  
+											   
+							   
+							  
+																	 
+			 
+				   
+						
+								  
+								   
+								
+			
+											   
+																		  
+											   
+																		  
+														 
+														
+									  
+																   
+									  
+																   
+																		  
+																		   
+				 
+						 
+																						  
+			  
+		  
+								
+										 
         xPercent: data.xPercent,
         yPercent: data.yPercent,
       };
@@ -495,6 +810,33 @@ const Carpet = () => {
       payload.lineupB[pId] = {
         xPercent: data.xPercent,
         yPercent: data.yPercent,
+																							
+		
+													  
+																								 
+				 
+																										 
+															
+				
+														  
+																		  
+												
+								
+																			
+						
+									  
+													
+									
+																			
+							
+							 
+				 
+							 
+																							 
+			 
+		 
+		
+														  
       };
     });
 
@@ -505,15 +847,23 @@ const Carpet = () => {
     }
     payload.matchName = userMatchName.trim() || defaultMatchName;
 
+										 
+						 
+											 
+							 
+		  
+																				 
+		 
+												   
+				
+	   
     try {
       const response = await apiClient.post("/matches", payload);
       const savedMatch = response.data;
       toast.success(`"${savedMatch.matchName || "İsimsiz Kadro"}" kaydedildi!`);
       fetchMatches().then(() => {
-        // Re-fetch matches to include the new one
         setSelectedMatchId(String(savedMatch.id));
         setSearchParams({ matchId: String(savedMatch.id) }, { replace: true });
-        // Scores should be fresh for a newly saved lineup
         setTeamAScore("");
         setTeamBScore("");
         setShareableLink(
@@ -532,6 +882,7 @@ const Carpet = () => {
   const handleSaveOrUpdateScore = async () => {
     if (!selectedMatchId) {
       toast.warn("Lütfen önce bir maç seçin veya mevcut dizilişi kaydedin.");
+		
       return;
     }
     const scoreAStr = String(teamAScore).trim();
@@ -544,12 +895,23 @@ const Carpet = () => {
     const scoreB = parseInt(scoreBStr, 10);
     if (isNaN(scoreA) || isNaN(scoreB)) {
       toast.error("Lütfen geçerli sayısal skor değerleri girin.");
+													   
+						   
+			   
+										  
+													   
       return;
     }
     if (scoreA < 0 || scoreB < 0) {
       toast.error("Skorlar negatif olamaz.");
       return;
+													 
+																   
+				 
+			  
+		  
     }
+	 
 
     setIsSavingScore(true);
     try {
@@ -558,7 +920,6 @@ const Carpet = () => {
         teamBScore: scoreB,
       });
       toast.success("Skorlar başarıyla kaydedildi!");
-      // Optionally re-fetch matches if score update changes any match list display property
       fetchMatches();
     } catch (error) {
       toast.error(
@@ -569,7 +930,10 @@ const Carpet = () => {
     } finally {
       setIsSavingScore(false);
     }
+									
+									
   };
+		 
 
   const handleDeleteMatch = async (matchIdToDelete) => {
     if (!matchIdToDelete) {
@@ -589,8 +953,8 @@ const Carpet = () => {
       try {
         await apiClient.delete(`/matches/${matchIdToDelete}`);
         toast.success(`"${matchNameToConfirm}" silindi.`);
-        clearPitch(); // Clear the pitch as the loaded match is now gone
-        fetchMatches(); // Refresh the match list
+        clearPitch();
+        fetchMatches();
       } catch (error) {
         toast.error(
           `Hata: ${error.response?.data?.message || "Kadro silinemedi."}`
@@ -604,58 +968,117 @@ const Carpet = () => {
       navigator.clipboard
         .writeText(shareableLink)
         .then(() => toast.success("Paylaşım linki panoya kopyalandı!"))
+													  
+																				   
+							  
+							  
+							 
+																							  
+			  
+			
         .catch(() =>
           toast.error("Link kopyalanamadı. Lütfen manuel olarak kopyalayın.")
+																			  
         );
     }
+								 
+	   
   };
 
   const handleShareBothPitches = async () => {
     if (!pitchesContainerRef.current) {
       toast.error("Sahalar görüntülenemedi.");
+				
+	   
+												  
+												  
+												 
+																	
       return;
     }
+											 
+											 
+										   
+																		 
     if (isSharing) return;
     setIsSharing(true);
     toast.info("Kadro ekran görüntüsü hazırlanıyor...");
+												
+				
+	   
 
     const targetElement = pitchesContainerRef.current;
     const originalScrollX = window.scrollX;
     const originalScrollY = window.scrollY;
-    window.scrollTo(0, 0); // Scroll to top to ensure full capture if element is off-screen
+    window.scrollTo(0, 0);
+							   
+			
+														  
+						
+					   
+					 
+									  
+																
+			  
+		   
+				 
+								 
+	   
+	 
 
-    await document.fonts.ready; // Ensure fonts are loaded
+    await document.fonts.ready;
+							 
+													  
+				
+	   
+									 
+														  
+		
+								
+																	  
+		  
+						
+																												  
+		  
+		 
+			  
+																  
+															  
+						 
+						   
+						  
+						
+																			  
+			  
+		  
+	   
+	 
 
     try {
       const canvas = await html2canvas(targetElement, {
         logging: false,
-        backgroundColor: "#111827", // Matches page background
-        // width: targetElement.scrollWidth, // Use scrollWidth/Height for full content
-        // height: targetElement.scrollHeight,
+        backgroundColor: "#111827",
         onclone: (documentClone) => {
-          // Style player markers for screenshot
           documentClone
             .querySelectorAll(".player-marker-capture")
             .forEach((marker) => {
               const playerName =
                 marker.getAttribute("data-player-name") || marker.innerText;
-              marker.innerHTML = ""; // Clear current content (like name) to re-style
+              marker.innerHTML = "";
               marker.style.fontSize = "13px";
               marker.style.fontWeight = "600";
-              marker.style.padding = "4px 8px"; // Adjusted padding
+              marker.style.padding = "4px 8px";
               marker.style.display = "flex";
               marker.style.alignItems = "center";
               marker.style.justifyContent = "center";
               marker.style.textAlign = "center";
               marker.style.boxSizing = "border-box";
-              // marker.style.border = '1px solid rgba(255,255,255,0.5)'; // Optional border
 
               const span = document.createElement("span");
               span.innerText = playerName;
-              span.style.paddingBottom = "10px"; // Original V2 style, check if needed
+              span.style.paddingBottom = "10px";
               marker.appendChild(span);
             });
-          // Remove any dynamic rings/highlights not desired in screenshot
           Array.from(
             documentClone.querySelectorAll(
               ".ring-2, .ring-yellow-400, .ring-offset-2, .ring-yellow-500"
@@ -670,14 +1093,14 @@ const Carpet = () => {
           );
         },
       });
-      window.scrollTo(originalScrollX, originalScrollY); // Restore scroll position
+      window.scrollTo(originalScrollX, originalScrollY);
 
       const padding = 20;
       const paddedCanvas = document.createElement("canvas");
       paddedCanvas.width = canvas.width + 2 * padding;
       paddedCanvas.height = canvas.height + 2 * padding;
       const ctx = paddedCanvas.getContext("2d");
-      ctx.fillStyle = "#111827"; // Background for padding
+      ctx.fillStyle = "#111827";
       ctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
       ctx.drawImage(canvas, padding, padding);
 
@@ -740,13 +1163,34 @@ const Carpet = () => {
 
   const alignClosePlayers = () => {
     setIsAligningPlayers(true);
-    const alignmentThreshold = 10; // Percentage threshold for considering players close
+    const alignmentThreshold = 10;
+											  
+					 
+						  
+												 
+																				  
+				   
+								
+									  
+							  
+									   
+									 
+									  
+				   
+				 
+			  
+			
+														   
 
     const alignPlayersInTeam = (players) => {
       const playerEntries = Object.entries(players);
       const updatedPlayers = { ...players };
+														   
+												   
+								   
+																	 
+												 
 
-      // Group players by their x position (horizontal alignment)
       const xGroups = {};
       playerEntries.forEach(([id, data]) => {
         const xPos =
@@ -754,10 +1198,26 @@ const Carpet = () => {
         if (!xGroups[xPos]) xGroups[xPos] = [];
         xGroups[xPos].push({ id, data });
       });
+																 
+							 
+																	   
+																   
+					
+							   
+																				  
+								 
+															   
+							
+			   
+				 
 
-      // Align players in each x group
       Object.values(xGroups).forEach((group) => {
         if (group.length > 1) {
+								 
+								
+																		   
+			  
+			
           const avgX =
             group.reduce((sum, { data }) => sum + data.xPercent, 0) /
             group.length;
@@ -767,10 +1227,28 @@ const Carpet = () => {
               xPercent: avgX,
             };
           });
+																
+								  
+													  
+														 
+					   
+																		  
+													   
+				
+			 
+				 
+																			 
+												 
         }
       });
+																   
+																		  
+														   
+				 
+							 
+	   
+	 
 
-      // Group players by their y position (vertical alignment)
       const yGroups = {};
       playerEntries.forEach(([id, data]) => {
         const yPos =
@@ -779,7 +1257,6 @@ const Carpet = () => {
         yGroups[yPos].push({ id, data });
       });
 
-      // Align players in each y group
       Object.values(yGroups).forEach((group) => {
         if (group.length > 1) {
           const avgY =
@@ -796,26 +1273,44 @@ const Carpet = () => {
 
       return updatedPlayers;
     };
+						
+																				   
+												   
+											 
+			
 
     setPlayersOnPitchA((prev) => alignPlayersInTeam(prev));
     setPlayersOnPitchB((prev) => alignPlayersInTeam(prev));
     setIsAligningPlayers(false);
     toast.success("Oyuncular hizalandı!");
+							   
+										  
+										
+										   
+									
   };
+				  
+			 
+			
 
   const switchTeams = () => {
     setIsSwitchingTeams(true);
     const tempTeamA = { ...playersOnPitchA };
     const tempTeamB = { ...playersOnPitchB };
+												   
+											 
+			
 
-    // Update player positions to maintain their relative positions on the new side
     const updatePositions = (players) => {
       const updatedPlayers = {};
       Object.entries(players).forEach(([id, data]) => {
+																		   
+							   
+										  
         updatedPlayers[id] = {
           ...data,
-          xPercent: 100 - data.xPercent, // Mirror the x position
-          yPercent: data.yPercent, // Keep the same y position
+          xPercent: 100 - data.xPercent,
+          yPercent: data.yPercent,
         };
       });
       return updatedPlayers;
@@ -829,23 +1324,27 @@ const Carpet = () => {
 
   const handleTeamGeneratorClose = () => {
     setIsTeamGeneratorOpen(false);
+								  
+											 
   };
 
   const handleTeamGeneratorTeams = (teamA, teamB) => {
-    // Convert team arrays to the format expected by the pitch
     const newPitchA = {};
     const newPitchB = {};
+											   
 
-    // Default positions for players
     const defaultPositions = {
       Kaleci: { x: 50, y: 90 },
-      Bek: { x: 80, y: 70 }, // This will be overridden for specific players
+      Bek: { x: 80, y: 70 },
       Stoper: { x: 50, y: 70 },
-      "Orta Saha": { x: 50, y: 50 }, // This will be overridden for specific players
-      Forvet: { x: 50, y: 30 }, // This will be overridden for specific players
+      "Orta Saha": { x: 50, y: 50 },
+      Forvet: { x: 50, y: 30 },
+									   
     };
+			
+							   
+		
 
-    // Assign players to teams with their positions
     teamA.forEach((player) => {
       const position = player.position || "Orta Saha";
       const pos = defaultPositions[position];
@@ -876,20 +1375,34 @@ const Carpet = () => {
       };
     });
 
+													   
     setPlayersOnPitchA(newPitchA);
     setPlayersOnPitchB(newPitchB);
     setIsTeamGeneratorOpen(false);
   };
 
-  // YENİ EKLENEN KISIM: Kazanma tahmini API çağrısı
   const fetchPrediction = useCallback(async () => {
     const teamAPlayerIds = Object.keys(playersOnPitchA);
     const teamBPlayerIds = Object.keys(playersOnPitchB);
+								  
+									   
+								  
+		
 
     if (teamAPlayerIds.length === 0 && teamBPlayerIds.length === 0) {
       setPrediction(null);
       return;
     }
+							  
+					 
+									
+										  
+									
+									  
+						  
+							
+		   
+		 
 
     setIsCalculatingPrediction(true);
     try {
@@ -900,7 +1413,6 @@ const Carpet = () => {
       setPrediction(response.data);
     } catch (error) {
       console.error("Prediction error:", error);
-      //toast.error("Kazanma tahmini alınamadı.");
       setPrediction(null);
     } finally {
       setIsCalculatingPrediction(false);
@@ -908,16 +1420,41 @@ const Carpet = () => {
   }, [playersOnPitchA, playersOnPitchB]);
 
   useEffect(() => {
-    // Debounce logic
     clearTimeout(debounceTimeoutRef.current);
     debounceTimeoutRef.current = setTimeout(() => {
       fetchPrediction();
-    }, 500); // 500ms gecikme
+    }, 500);
 
     return () => {
       clearTimeout(debounceTimeoutRef.current);
     };
   }, [playersOnPitchA, playersOnPitchB, fetchPrediction]);
+
+  const activePlayerBaseData = activeId
+    ? allPlayers.find((p) => String(p.id) === String(activeId))
+    : null;
+  const playersOnPitchIds = useRef(new Set()).current;
+  playersOnPitchIds.clear();
+  Object.keys(playersOnPitchA).forEach((id) => playersOnPitchIds.add(id));
+  Object.keys(playersOnPitchB).forEach((id) => playersOnPitchIds.add(id));
+  const availablePlayers = allPlayers.filter(
+    (p) => !playersOnPitchIds.has(String(p.id))
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor)
+													   
+													   
+			
+									  
+					   
+  );
+							 
+				 
+										   
+	   
+										  
 
   return (
     <DndContext
@@ -926,31 +1463,59 @@ const Carpet = () => {
       onDragEnd={handleDragEnd}
       collisionDetection={closestCorners}
     >
+												
+			 
+		  
+									 
+					  
+							   
+											 
+				 
+					
+							   
+												 
+				 
+			 
+							
+															   
+			 
+		  
+			  
+				   
       <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8 font-sans">
+						
         <ToastContainer
           autoClose={2500}
           hideProgressBar
           theme="dark"
           position="top-center"
         />
+						
         {isSharing && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-[200]">
+								  
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4"></div>
+								  
             <p className="text-white text-lg">Görüntü hazırlanıyor...</p>
+				   
           </div>
         )}
+						
         <div className="flex justify-between items-center mb-4">
-          {/* <Link to="/" className="text-blue-400 hover:text-blue-300">&larr; Ana Sayfaya Dön</Link> */}
+							 
           <h1 className="text-2xl md:text-3xl font-bold text-center flex-grow">
             Halı Saha Kadro Oluşturucu
           </h1>
+						  
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
+							 
           <div
             className="lg:w-1/4 flex flex-col gap-4"
             style={{ minWidth: "250px" }}
           >
+								  
             <PlayerPool
               id="playerPool"
               players={availablePlayers}
@@ -958,6 +1523,7 @@ const Carpet = () => {
             />
 
             <div className="bg-gray-800 p-4 rounded-lg shadow-lg space-y-3">
+									   
               <ActionButtons
                 onSharePitches={handleShareBothPitches}
                 onClearPitch={clearPitch}
@@ -966,11 +1532,8 @@ const Carpet = () => {
                 onSwitchTeams={switchTeams}
                 onOpenTeamGenerator={() => setIsTeamGeneratorOpen(true)}
                 onQuickGenerateTeams={() => {
-                  // Use the last selected players and positions
                   const { selectedPlayers, playerPositions } = teamGenState;
                   if (!selectedPlayers || selectedPlayers.length < 2) return;
-                  // Copy TeamGenerator's generateTeams logic
-                  // Group players by their positions
                   const playersByPosition = {};
                   selectedPlayers.forEach((player) => {
                     const position = playerPositions[player.id] || "Orta Saha";
@@ -979,7 +1542,6 @@ const Carpet = () => {
                     }
                     playersByPosition[position].push({ ...player, position });
                   });
-                  // Initialize teams
                   const teamA = [];
                   const teamB = [];
                   const teamAMidfielders =
@@ -1079,7 +1641,12 @@ const Carpet = () => {
                   teamGenState.selectedPlayers &&
                   teamGenState.selectedPlayers.length >= 2
                 }
+                isChemistryVisible={isChemistryVisible}
+                onToggleChemistry={handleToggleChemistry}
               />
+			 
+		  
+			  
 
               <MatchControls
                 matches={matches}
@@ -1104,10 +1671,17 @@ const Carpet = () => {
                 onSaveScore={handleSaveOrUpdateScore}
                 isSavingScore={isSavingScore}
               />
+									
             </div>
 
             <PlayerManagement
               allPlayers={allPlayers}
+														  
+											   
+				
+							 
+									
+											   
               isLoadingPlayers={isLoadingPlayers}
               newPlayerName={newPlayerName}
               onNewPlayerNameChange={setNewPlayerName}
@@ -1115,86 +1689,385 @@ const Carpet = () => {
               onDeletePlayer={handleDeletePlayer}
               isProcessingAction={isSharing}
             />
+							   
           </div>
 
           <div className="lg:w-3/4 flex flex-col gap-4">
-            {/* Sahalar */}
+								  
             <div
               ref={pitchesContainerRef}
               className="flex flex-col sm:flex-row gap-4"
             >
+									   
               <PitchDisplay
                 pitchId="pitchAreaA"
                 teamId="A"
                 playersOnThisPitch={playersOnPitchA}
                 pitchRef={pitchRefA}
+                pairStats={pairStatsA} // YENİ: Prop'u iletiyoruz
+                isChemistryVisible={isChemistryVisible}
               />
+									   
               <PitchDisplay
                 pitchId="pitchAreaB"
                 teamId="B"
+							   
+																						
+							  
+											
+											
+												   
+																						 
+												   
+																						  
+												
+																					  
+												
+																					   
+																	 
+														
+																		   
+															 
+								   
+																			 
+																				 
+															 
+																		
+																	 
+										 
+														  
+																				  
+																			 
+																		  
+																			   
+																		   
+										 
+													   
+															
+																	   
+															  
+												  
+														  
+																						   
+										   
+											   
+																	   
+															  
+												  
+														  
+																						   
+										   
+										
+																			 
+																	   
+																			
+																		
+										 
+													   
+															
+																	
+															  
+																		   
+														  
+																						
+												  
+																			   
+																 
+																					
+																 
+																   
+										   
+											   
+																	
+															  
+																		   
+														  
+																						
+												  
+																			   
+																 
+																					
+																 
+																   
+										   
+										
+																			 
+											
+														 
+									 
+									
+							   
+							 
+																  
+						  
+											 
+													 
+															 
+														   
+										   
+																	 
                 playersOnThisPitch={playersOnPitchB}
                 pitchRef={pitchRefB}
+                pairStats={pairStatsB} // YENİ: Prop'u iletiyoruz
+										  
+														  
+																   
+						 
+                isChemistryVisible={isChemistryVisible}
+																 
               />
+									
             </div>
 
-            {/* Kazanma Tahmini Çubuğu */}
-            {/* 👇 Değişiklikler bu dış kapsayıcıda başlıyor */}
+            {/* YENİ: Takım Kimyası Göstergesi */}
+            {isChemistryVisible && (
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+											
+                                <div className="bg-gray-800 p-3 rounded-lg text-center">
+												 
+                                    <h4 className="text-sm font-bold text-red-400">TAKIM A KİMYASI</h4>
+									
+					   
+												 
+                                    {teamAChemistry.isLoading ? (
+                                        <div className="h-8 flex items-center justify-center">
+														   
+                                            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-red-400"></div>
+														
+                                        </div>
+                                    ) : (
+																		   
+                                        <p className="text-3xl font-bold text-white">{teamAChemistry.value.toFixed(1)}%</p>
+																	   
+						  
+														  
+							 
+														
+																	
+																   
+												
+											  
+							 
+						 
+																				   
+							   
+                                    )}
+                                </div>
+					
+											  
+					  
+											
+                                <div className="bg-gray-800 p-3 rounded-lg text-center">
+												 
+                                    <h4 className="text-sm font-bold text-blue-400">TAKIM B KİMYASI</h4>
+									
+					   
+												 
+                                    {teamBChemistry.isLoading ? (
+                                        <div className="h-8 flex items-center justify-center">
+														   
+                                            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-400"></div>
+														
+                                        </div>
+                                    ) : (
+																		   
+                                        <p className="text-3xl font-bold text-white">{teamBChemistry.value.toFixed(1)}%</p>
+																	   
+						  
+														  
+							 
+														
+																	
+																   
+												
+											  
+							 
+						 
+																				   
+							   
+                                    )}
+                                </div>
+					
+											  
+                            </div>
+										 
+					
+                        )}
+            {/* YENİ BÖLÜM SONU */}
+
+								   
+											
+														
+												  
+															 
+												  
+														
+												   
+					
+					 
+
             <div
-              className="relative px-1 h-8" // 1. `relative` class'ı buraya taşıdık.
-              onMouseEnter={() => setIsPredictionTooltipVisible(true)} // 2. Olay dinleyiciler artık burada.
+              className="relative px-1 h-8"
+              onMouseEnter={() => setIsPredictionTooltipVisible(true)}
               onMouseLeave={() => setIsPredictionTooltipVisible(false)}
             >
-              {/* Yükseklik garantisi için h-8 eklendi */}
+									   
               {prediction && (
                 <>
-                  {" "}
-                  {/* React Fragment kullanarak elementleri grupluyoruz */}
-                  {/* 3. Tooltip JSX'i artık overflow-hidden olan div'in DIŞINDA */}
+												 
                   {isPredictionTooltipVisible && (
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 text-sm font-medium text-white bg-gray-700 rounded-lg shadow-xl z-50 text-left">
+														   
                       <p className="font-bold mb-1">Nasıl Hesaplanır? 🧐</p>
+											  
+															   
+					   
+								  
+											
+								  
+															
+											
+											  
+															   
+					   
+						
+
+										  
+																			
+																				
                       <p className="font-normal text-xs">
+																
                         <p className="font-bold">Oyuncu Puanı:</p>
                         Her oyuncuya, geçmiş galibiyet oranına göre bir "Güç
+																							 
                         Puanı" verilir. (Yeni oyunculara varsayılan bir puan
                         atanır).
                         <br />
                         <p className="font-bold">Takım Gücü:</p>
+																						 
                         Takımdaki oyuncuların güç puanları toplanarak takımın
                         toplam gücü bulunur.
                         <br />
                         <p className="font-bold">Kazanma Olasılığı:</p>
                         Takımınızın gücü, iki takımın toplam gücüne oranlanarak
+																						
                         kazanma yüzdesi hesaplanır.
                       </p>
+																							  
                     </div>
                   )}
-                  {/* Tahmin çubuğunun kendisi. Artık içinde tooltip veya olay dinleyici yok. */}
+												 
                   <div className="w-full bg-gray-800 rounded-lg overflow-hidden flex text-sm font-bold shadow-lg h-full border-2 border-gray-700">
+													  
                     <div
                       className="bg-red-600 text-white flex items-center justify-center transition-all duration-700 ease-out pl-2"
                       style={{ width: `${prediction.teamAWinPercentage}%` }}
+															
+								 
+															  
+																		  
+																		   
+													  
+													
+								   
                     >
+														   
                       {prediction.teamAWinPercentage > 15 &&
                         `TAKIM A: ${prediction.teamAWinPercentage.toFixed(0)}%`}
+						  
                     </div>
+							 
+							  
                     <div
                       className="bg-white text-black flex items-center justify-center transition-all duration-700 ease-out pr-2"
                       style={{ width: `${prediction.teamBWinPercentage}%` }}
+																					 
+																																
+									
+								
+																		   
+																	 
+																		  
                     >
+														   
                       {prediction.teamBWinPercentage > 15 &&
                         `TAKIM B: ${prediction.teamBWinPercentage.toFixed(0)}%`}
+															  
+																		  
+																		   
+													  
+													
+								   
+							 
+																						 
+								   
+						  
                     </div>
+												   
                   </div>
+											  
                 </>
               )}
+									
             </div>
+							   
           </div>
+						  
         </div>
+
+					  
+												  
+																			 
+																			  
+				   
+									 
+						  
+														   
+																																														   
+																						   
+																	
+																			   
+																							  
+																						  
+											 
+										  
+																			   
+																								
+														  
+										  
+																					   
+																									 
+																 
+									 
+								  
+									   
+							 
+																																						   
+								  
+																																			 
+																					   
+							   
+																	   
+																							
+									
+								  
+																																		   
+																					   
+							   
+																	   
+																							
+									
+								 
+						   
+					   
+						
+					 
+				  
 
         <footer className="mt-8 text-center text-gray-400 text-sm">
           Güneş Tan Cebeci | 2025
         </footer>
+						
         <TeamGenerator
           isOpen={isTeamGeneratorOpen}
           onClose={handleTeamGeneratorClose}
@@ -1208,12 +2081,15 @@ const Carpet = () => {
           }}
           onStateChange={handleTeamGenStateChange}
         />
+					 
       </div>
+				   
       <DragOverlay
         dropAnimation={null}
         zIndex={100}
         modifiers={[snapCenterToCursor]}
       >
+						
         {activeId && activePlayerBaseData ? (
           <PlayerMarker
             id={`overlay-${activeId}`}
@@ -1228,7 +2104,9 @@ const Carpet = () => {
             isOverlay
           />
         ) : null}
+					 
       </DragOverlay>
+				
     </DndContext>
   );
 };
